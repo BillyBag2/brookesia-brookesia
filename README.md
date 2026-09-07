@@ -22,6 +22,40 @@ An attempt to create ESP-Brookesia, for a number of boards that I have.
 - [Waveshare ESP32-P4 86 box](./docs/boards/waveshare_esp32_p4_86_box.md)
 - [M5 Stack ESP32-P4 POE](./docs/boards/m5_stack_esp32_p4_poe.md)
 
+## Board configuration
+
+Load `sdkconfig.default`, `sdkconfig.esp324p`, and exactly one board file as
+defaults, in that order. The filenames are intentional and must be passed
+explicitly to ESP-IDF. For example, in an initialized ESP-IDF PowerShell terminal:
+
+```powershell
+$board = 'm5_stack_tab5'
+idf.py -B "build/$board" -D "SDKCONFIG=$PWD/build/$board/sdkconfig" -D "SDKCONFIG_DEFAULTS=sdkconfig.default;sdkconfig.esp324p;sdkconfig.$board" -D IDF_TARGET=esp32p4 reconfigure
+```
+
+Other board names are `waveshare_esp32_p4_86_box` and `m5_stack_esp32_p4_poe`.
+Separate generated configs prevent settings leaking between boards. Defaults
+apply when generating a new config; they do not override existing explicit
+settings. Use the same arguments with `build` in place of `reconfigure` to build.
+
+The shared P4 file selects silicon revisions **1.0-1.99** in ESP-IDF 6.1.
+Revision 3.x requires a separate configuration. All board files enable 200 MHz
+HEX PSRAM, startup initialization/testing, and allocation through `malloc()`;
+the driver detects the installed 32 MB capacity at startup.
+
+Tab5 and Waveshare enable C6 Wi-Fi through ESP-Hosted 2.12.13, pinned in
+`main/idf_component.yml`; Wi-Fi Remote is provided by ESP-IDF 6.1. The PoE-P4
+file disables both. Tab5 uses the upstream Tab5 preset; Waveshare uses
+CLK=18, CMD=19, D0-D3=14-17, and reset=54 from the
+[mainboard schematic](https://files.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-4B/ESP32-P4-WIFI6-Touch-LCD-4B.pdf).
+These Waveshare pins differ from the website's GPIO allocation table.
+Tab5 pin assignments are also listed in the
+[manufacturer pin map](https://docs.m5stack.com/en/core/Tab5#pinmap).
+
+These files configure host support. Wi-Fi use also requires compatible
+ESP-Hosted SDIO firmware on the C6 and application initialization; `app_main`
+is currently empty. Hardware operation has not yet been tested.
+
 ## Specification table
 
 Manufacturer specifications checked on 2026-09-07. The Waveshare column covers the relay version, **ESP32-P4-86-Panel-ETH-2RO**. The M5 Stack POE board is treated as **Unit PoE-P4 (U213)**. See the linked board pages for sources, pinouts, and schematics.

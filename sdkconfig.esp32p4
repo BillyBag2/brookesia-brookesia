@@ -1,0 +1,8 @@
+# ESP-IDF 6.1: support ESP32-P4 silicon revisions 1.0 through 1.99.
+# The maximum is derived by IDF; pre-3.0 and 3.x support are mutually exclusive.
+CONFIG_IDF_TARGET="esp32p4"
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+CONFIG_ESP32P4_REV_MIN_100=y
+
+# Pre-3.0 silicon uses the 360 MHz CPU clock; 400 MHz fails in esp_clk_init.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_360=y
