@@ -80,3 +80,38 @@ Manufacturer specifications checked on 2026-09-07. The Waveshare column covers t
 | Power input | USB-C; 6–24 V external; NP-F550 battery | USB-C; 6–30 V DC terminal | USB-C 5 V; PoE |
 | Battery | Removable NP-F550; included with Kit only | RTC backup header; main battery ? | ? |
 | Expansion | Grove, M5-Bus, GPIO_EXT, Stamp pads | 2.0 mm headers; bottom-board connector | Grove, Hat2-Bus, SDIO-Bus, ISP-Bus |
+
+## ESP-Brookesia components
+
+Versions below were checked against the [ESP Component Registry](https://components.espressif.com/) on 2026-09-08. The v0.7 column shows the most recent published v0.7 release; "Not published" means the component was introduced after v0.7.
+
+| Component | Latest v0.7 version | Latest available version |
+| - | - | - |
+| `brookesia_lib_utils` | 0.7.9 | 0.8.2 |
+| `brookesia_mcp_utils` | 0.7.1 | 0.8.0 |
+| `brookesia_hal_interface` | 0.7.5 | 0.8.2 |
+| `brookesia_hal_adaptor` | 0.7.4 | 0.8.4 |
+| `brookesia_hal_boards` | 0.7.5 | 0.8.0 |
+| `brookesia_service_manager` | 0.7.8 | 0.8.2 |
+| `brookesia_service_video` | 0.7.0 | 0.8.3 |
+| `brookesia_service_display` | Not published | 0.8.2 |
+| `brookesia_service_storage` | Not published | 0.8.3 |
+| `brookesia_service_device` | 0.7.1 | 0.8.2 |
+| `brookesia_agent_manager` | 0.7.5 | 0.8.2 |
+| `brookesia_agent_coze` | 0.7.5 | 0.8.2 |
+| `brookesia_agent_openai` | 0.7.5 | 0.8.1 |
+| `brookesia_agent_xiaozhi` | 0.7.4 | 0.8.2 |
+| `brookesia_expression_emote` | 0.7.6 | 0.8.2 |
+| `brookesia_emulation_nes` | Not published | 0.8.2 |
+| `brookesia_gui_interface` | Not published | 0.8.2 |
+| `brookesia_gui_lvgl` | Not published | 0.8.4 |
+| `brookesia_runtime_manager` | Not published | 0.8.2 |
+| `brookesia_runtime_elf` | Not published | 0.8.2 |
+| `brookesia_runtime_js` | Not published | 0.8.3 |
+| `brookesia_runtime_lua` | Not published | 0.8.2 |
+| `brookesia_runtime_wasm` | Not published | 0.8.2 |
+| `brookesia_system_core` | Not published | 0.8.3 |
+| `brookesia_system_super` | Not published | 0.8.3 |
+| `brookesia_app_files` | Not published | 0.8.2 |
+| `brookesia_app_settings` | Not published | 0.8.3 |
+| `brookesia_app_store` | Not published | 0.8.2 |
