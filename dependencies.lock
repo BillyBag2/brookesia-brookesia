@@ -168,6 +168,17 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 0.8.2
+  espressif/brookesia_service_device:
+    component_hash: c2439f25fcdb6a4ef556d5537fd4aa89a5bcdda28eb8a08b983168db2662511d
+    dependencies:
+    - name: espressif/brookesia_service_helper
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.8.2
   espressif/brookesia_service_display:
     component_hash: 2cd3731644ea9f7b93ad439f8de6210baeb1a85fec7bcfe09a97ec285aabd4be
     dependencies:
@@ -335,6 +346,20 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 0.5.3
+  espressif/eppp_link:
+    component_hash: c1369b37f2b0b427b198ae14e07e7547d3da92b95fe4dc7f949e5de560b35f21
+    dependencies:
+    - name: espressif/esp_serial_slave_link
+      registry_url: https://components.espressif.com
+      require: private
+      version: ^1.1.0
+    - name: idf
+      require: private
+      version: '>=5.2'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.6
   espressif/esp-boost:
     component_hash: 332946a64356203e9443a3bae9cec93ef8aab6df37de2f61270c972f238f9b3f
     dependencies:
@@ -428,7 +453,7 @@ dependencies:
     - esp32s31
     version: 2.4.0
   espressif/esp_codec_dev:
-    component_hash: 0d9e9bc288156eb55f79338d312e1ebf8c9dfbd5e7d13ef0f20ccb031b4e15cf
+    component_hash: df70f10af8d7b922add7b9d07372c9c97ab356e58d72b7a892050227c2d44348
     dependencies:
     - name: idf
       require: private
@@ -436,9 +461,9 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 1.5.4
+    version: 1.5.11
   espressif/esp_h264:
-    component_hash: 40cb64e697a8cfd787453165f6ce54e1fb8601844448eb073d677b9f9fde071e
+    component_hash: 0b3524f8517d63f9d4bfc8481dcd325e9cbdb0c8a97e66dbd56df74fed193f8b
     dependencies:
     - name: idf
       require: private
@@ -448,10 +473,11 @@ dependencies:
       type: service
     targets:
     - esp32s3
+    - esp32s31
     - esp32p4
-    version: 1.3.0
+    version: 1.3.8
   espressif/esp_hosted:
-    component_hash: f1792f36ef9a637adf2faa2662f3c4500b07f3d2ba65c25f3ed4824490ba59f9
+    component_hash: e23eb702781c804a62909e5394da0641a2bff9adccec6673a7bff60ce8c8b756
     dependencies:
     - name: idf
       require: private
@@ -459,7 +485,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 2.12.13
+    version: 2.12.3
   espressif/esp_io_expander:
     component_hash: 7b7f91270172e46ca4597e3874f48d8412e280e8c295559f5922ec38656e3e5f
     dependencies:
@@ -714,7 +740,7 @@ dependencies:
     - esp32h4
     version: 1.0.2
   espressif/esp_sccb_intf:
-    component_hash: c071b189e49f40940722aea01a5489f873385cc39cd5b14012341135b85d1a9d
+    component_hash: eb6a7d5c992f09583c163b2e3f5e95a0fdc87a2d9f8e026f3e59153935553889
     dependencies:
     - name: idf
       require: private
@@ -722,7 +748,17 @@ dependencies:
     source:
       registry_url: https://components.espressif.com
       type: service
-    version: 0.0.8
+    version: 0.0.9
+  espressif/esp_serial_slave_link:
+    component_hash: ac1776806de0a6e371c84e87898bb983e19ce62aa7f1e2e5c4a3b0234a575d2c
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.2
   espressif/esp_video:
     component_hash: ef614cc04e69e117fd08272a8b347ae5972eff2d0c8659af6444f8484931c7c1
     dependencies:
@@ -767,6 +803,26 @@ dependencies:
     - esp32c61
     - esp32s31
     version: 2.4.1
+  espressif/esp_wifi_remote:
+    component_hash: 50d3beaf95c0bc47d0fcf56752beaf3cbaae981fd8c3b74d6890b45d8be689fe
+    dependencies:
+    - name: espressif/esp_hosted
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: target in [esp32h2, esp32p4]
+      version: '>=2.11'
+    - name: espressif/wifi_remote_over_eppp
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=0.1'
+    - name: idf
+      require: private
+      version: '>=5.3'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.6.4
   espressif/freetype:
     component_hash: aa9f7657a69b2b1c1f49044017fc424081d4e0fe6e97834cb43883548d44e3ca
     dependencies:
@@ -813,21 +869,22 @@ dependencies:
       type: service
     version: 0.5.4
   espressif/usb:
-    component_hash: 9da54c646719bdbf30bd33e6c06b3b7e9b224faa0265e060abcde206cdf1033d
+    component_hash: 6c2cff118141dbbca181d0d27d71801fdddfc78f7ac03ae43f6e5a8cbd89cb99
     dependencies:
     - name: idf
       require: private
-      version: '>=5.4'
+      version: '>=5.5.3'
     source:
       registry_url: https://components.espressif.com
       type: service
     targets:
     - esp32s2
     - esp32s3
+    - esp32s31
     - esp32p4
     - esp32h4
     - linux
-    version: 1.3.0
+    version: 1.5.0
   espressif/usb_host_uvc:
     component_hash: ecb2604b71cb5a65d64e5f441be54793b1838096043ad8cf1fa0d3012de18a9a
     dependencies:
@@ -852,6 +909,20 @@ dependencies:
     - esp32s31
     - linux
     version: 2.5.2
+  espressif/wifi_remote_over_eppp:
+    component_hash: 1fd6968af20f0b19e421f6b519b0a8caf81d689afc3783b564c28559e45f66ef
+    dependencies:
+    - name: espressif/eppp_link
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=0.1'
+    - name: idf
+      require: private
+      version: '>=5.3'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.3.3
   espressif/zlib:
     component_hash: 9083cada65f1c9d298ef92266232d071c6f2f335164e2799554b3eae73aedc55
     dependencies:
@@ -866,6 +937,16 @@ dependencies:
     source:
       type: idf
     version: 6.1.0
+  joltwallet/littlefs:
+    component_hash: 3af20a3d75c49db9dc2286fd50862c34055c9f578419ad1f2bf7ed3ed01391fe
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.22.3
   lvgl/lvgl:
     component_hash: 17e68bfd21f0edf4c3ee838e2273da840bf3930e5dbc3bfa6c1190c3aed41f9f
     dependencies: []
@@ -876,6 +957,7 @@ dependencies:
 direct_dependencies:
 - espressif/brookesia_gui_lvgl
 - espressif/brookesia_hal_adaptor
+- espressif/brookesia_service_device
 - espressif/brookesia_system_super
 - espressif/esp_board_manager
 - espressif/esp_hosted
@@ -887,7 +969,8 @@ direct_dependencies:
 - espressif/esp_lcd_touch_st7123
 - espressif/m5stack_boards
 - idf
+- joltwallet/littlefs
 - lvgl/lvgl
-manifest_hash: 7275d2e48643a4ecab592f2fc17121ac186d31ab10530349626b6a0dbf66147f
+manifest_hash: bba39c5e125831c977b4b0e37616d0ff1e7a02ecee69bc5923fc4d0e3eb81ea0
 target: esp32p4
 version: 3.0.0

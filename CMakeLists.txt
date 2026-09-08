@@ -20,3 +20,13 @@ list(APPEND SDKCONFIG_DEFAULTS
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(sample_project)
+
+# Package Brookesia's staged UI resources into the runtime filesystem and
+# include that image in the normal `idf.py flash` command.
+get_property(brookesia_resource_targets GLOBAL PROPERTY BROOKESIA_SYSTEM_SUPER_STAGE_TARGETS)
+littlefs_create_partition_image(
+    littlefs_data
+    "${CMAKE_CURRENT_LIST_DIR}/littlefs"
+    FLASH_IN_PROJECT
+    DEPENDS ${brookesia_resource_targets}
+)
