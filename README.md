@@ -24,19 +24,10 @@ An attempt to create ESP-Brookesia, for a number of boards that I have.
 
 ## Board configuration
 
-Load `sdkconfig.default`, `sdkconfig.esp324p`, and exactly one board file as
-defaults, in that order. The filenames are intentional and must be passed
-explicitly to ESP-IDF. For example, in an initialized ESP-IDF PowerShell terminal:
-
-```powershell
-$board = 'm5_stack_tab5'
-idf.py -B "build/$board" -D "SDKCONFIG=$PWD/build/$board/sdkconfig" -D "SDKCONFIG_DEFAULTS=sdkconfig.default;sdkconfig.esp324p;sdkconfig.$board" -D IDF_TARGET=esp32p4 reconfigure
-```
-
-Other board names are `waveshare_esp32_p4_86_box` and `m5_stack_esp32_p4_poe`.
-Separate generated configs prevent settings leaking between boards. Defaults
-apply when generating a new config; they do not override existing explicit
-settings. Use the same arguments with `build` in place of `reconfigure` to build.
+Choose the target board by editing `SDKCONFIG_DEFAULTS` in the root
+`CMakeLists.txt`. Leave `sdkconfig.default` and `sdkconfig.esp32p4` enabled,
+then uncomment exactly one `sdkconfig.<board>` entry and comment out the other
+board entries.
 
 The shared P4 file selects silicon revisions **1.0-1.99** in ESP-IDF 6.1.
 Revision 3.x requires a separate configuration. All board files enable 200 MHz
@@ -81,7 +72,7 @@ Manufacturer specifications checked on 2026-09-07. The Waveshare column covers t
 | Audio codec | ES8388 | ES8311 | ? |
 | Microphones | Dual; ES7210 | Dual; ES7210 | ? |
 | Speaker / audio output | 1 W speaker; 3.5 mm jack | Header for 8-ohm, 2 W speaker | ? |
-| microSD slot | Yes | Yes, SDIO 3.0 | ? (SDIO expansion bus provided) |
+| microSD slot | Yes (covered when the keyboard is fitted) | Yes, SDIO 3.0 (internal) | No (SDIO expansion bus provided) |
 | RS485 | Yes, SIT3088 | Yes, isolated, automatic direction | No |
 | Relays | No | 2, optocoupler-isolated | No |
 | Motion sensor | BMI270, 6-axis | No | No |
