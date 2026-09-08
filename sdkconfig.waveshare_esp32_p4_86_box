@@ -1,4 +1,11 @@
-# Waveshare ESP32-P4-86-Panel-ETH-2RO: 32 MB in-package PSRAM.
+# Waveshare ESP32-P4-86-Panel-ETH-2RO: 32 MB flash and 32 MB
+# in-package PSRAM.
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
+
+# Brookesia application and resource partitions for the 32 MB flash.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_32m.csv"
+
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_HEX=y
 CONFIG_SPIRAM_SPEED_200M=y

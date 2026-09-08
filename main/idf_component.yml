@@ -1,5 +1,24 @@
 dependencies:
   idf: ">=6.1"
+  # Minimal ESP-Brookesia stack for a graphical touch system.
+  espressif/brookesia_system_super:
+    version: "0.8.*"
+  espressif/brookesia_gui_lvgl:
+    version: "0.8.*"
+  # brookesia_gui_lvgl 0.8.4 uses lv_fs_path_ex_t as a public complete type;
+  # LVGL 9.3 only exposes a forward declaration for it.
+  lvgl/lvgl:
+    version: "9.4.0"
+  espressif/brookesia_hal_adaptor:
+    version: "0.8.*"
+
+  # TAB5 LCD and touch definitions for the HAL adaptor's Board Manager.
+  # Keep this on 0.5.x to match the adaptor's esp_board_manager dependency.
+  espressif/esp_board_manager:
+    version: "0.5.*"
+  espressif/m5stack_boards:
+    version: "0.5.*"
+
   espressif/esp_hosted:
     version: "2.12.13"
     rules:

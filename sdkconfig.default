@@ -1,0 +1,4 @@
+# Brookesia enables LVGL's stdio and POSIX filesystem drivers. LVGL requires
+# each enabled driver to have an uppercase ASCII drive letter (65 is 'A').
+CONFIG_LV_FS_STDIO_LETTER=65
+CONFIG_LV_FS_POSIX_LETTER=65

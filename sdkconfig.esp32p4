@@ -6,3 +6,12 @@ CONFIG_ESP32P4_REV_MIN_100=y
 
 # Pre-3.0 silicon uses the 360 MHz CPU clock; 400 MHz fails in esp_clk_init.
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_360=y
+
+# Let general-purpose malloc() allocations use PSRAM instead of preferring
+# scarce internal RAM for every allocation below 16 KiB. This matches the
+# Brookesia ESP32-P4 test configuration and preserves RAM for FreeRTOS stacks.
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=0
+
+# Work around an ESP-IDF 6.1 sleep-retention assertion during startup on
+# pre-3.0 ESP32-P4 silicon. Runtime power management is not enabled.
+# CONFIG_PM_SLEEP_CLK_ICG_ENABLE is not set

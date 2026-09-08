@@ -1,4 +1,10 @@
-# M5Stack Unit PoE-P4 (U213): 32 MB in-package PSRAM.
+# M5Stack Unit PoE-P4 (U213): 16 MB flash and 32 MB in-package PSRAM.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# Brookesia application and resource partitions for the 16 MB flash.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_16m.csv"
+
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_HEX=y
 CONFIG_SPIRAM_SPEED_200M=y

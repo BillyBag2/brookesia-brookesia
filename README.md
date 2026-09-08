@@ -29,10 +29,24 @@ Choose the target board by editing `SDKCONFIG_DEFAULTS` in the root
 then uncomment exactly one `sdkconfig.<board>` entry and comment out the other
 board entries.
 
+For TAB5, run an initial `idf.py reconfigure` to download the managed
+components, then generate its LCD and touch configuration with:
+
+```powershell
+idf.py bmgr -b m5stack_tab5
+```
+
+Run `idf.py reconfigure` again after generation. The root `CMakeLists.txt`
+remains the source of truth for the selected project target.
+
 The shared P4 file selects silicon revisions **1.0-1.99** in ESP-IDF 6.1.
 Revision 3.x requires a separate configuration. All board files enable 200 MHz
 HEX PSRAM, startup initialization/testing, and allocation through `malloc()`;
 the driver detects the installed 32 MB capacity at startup.
+
+Each board configuration also selects a partition table matching its flash:
+Tab5 and PoE-P4 use `partitions_16m.csv`, while the 32 MB Waveshare 86 Box uses
+`partitions_32m.csv`.
 
 Tab5 and Waveshare enable C6 Wi-Fi through ESP-Hosted 2.12.13, pinned in
 `main/idf_component.yml`; Wi-Fi Remote is provided by ESP-IDF 6.1. The PoE-P4
