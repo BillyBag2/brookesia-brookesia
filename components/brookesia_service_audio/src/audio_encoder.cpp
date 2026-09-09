@@ -67,8 +67,14 @@ bool AudioEncoder::on_start()
                               hal::audio::EncoderIface::get_default_instance_name(id_)
                           );
     auto encoder_iface = encoder_handle.get();
-    BROOKESIA_CHECK_NULL_RETURN(encoder_iface, false, "Failed to get audio encoder interface");
-    encoder_iface_ = std::move(encoder_handle);
+    if (encoder_iface != nullptr) {
+        encoder_iface_handle_ = std::move(encoder_handle);
+        encoder_iface_ = std::move(encoder_iface);
+    } else {
+        encoder_iface_ = make_codec_encoder_fallback();
+        BROOKESIA_CHECK_NULL_RETURN(encoder_iface_, false, "Failed to create codec encoder fallback");
+        BROOKESIA_LOGW("Audio processor unavailable; using PCM codec recorder fallback");
+    }
 
     return true;
 }
@@ -83,6 +89,7 @@ void AudioEncoder::on_stop()
     );
     stop_encoder();
     encoder_iface_.reset();
+    encoder_iface_handle_.reset();
 }
 
 
@@ -323,7 +330,7 @@ bool AudioEncoder::encoder_fetch_task(uint32_t fetch_data_size, uint32_t fetch_i
         if (!encoder_iface_ || !encoder_iface_->is_started()) {
             return false;
         }
-        iface = encoder_iface_.get();
+        iface = encoder_iface_;
     }
 
     std::vector<uint8_t> data(fetch_data_size);

@@ -31,6 +31,8 @@ using namespace esp_brookesia;
 namespace {
 
 using AudioPlayback = service::helper::AudioPlayback;
+using AudioDecoderHelper = service::helper::AudioDecoder<0>;
+using AudioEncoderHelper = service::helper::AudioEncoder<0>;
 constexpr std::string_view MUSIC_ID = "brookesia.example.music_player";
 constexpr std::string_view SPECTRUM_ID = "brookesia.example.spectrum_analyser";
 constexpr const char *MUSIC_FILE_PATH = "/littlefs/apps/brookesia.example.music_player/audio/example.mp3";
@@ -162,8 +164,23 @@ private:
     void set_status(std::string_view s){ if(context_) (void)context_->gui().set_text("/music/status",s); }
     void play(){
         stop_audio();
-        player_=hal::acquire_first_interface<hal::audio::CodecPlayerIface>();
-        if(!player_){ set_status("Speaker unavailable"); return; }
+        decoder_binding_=service::ServiceManager::get_instance().bind(AudioDecoderHelper::get_name().data());
+        decoder_=service::AudioDecoder::get_instance(0);
+        if(!decoder_binding_.is_valid() || !decoder_){
+            decoder_=nullptr; decoder_binding_.release(); set_status("Speaker unavailable"); return;
+        }
+        (void)decoder_->unregister_source(MUSIC_SOURCE);
+        auto source=decoder_->register_source({
+            .name=MUSIC_SOURCE,
+            .role="media",
+            .preferred_outputs={MUSIC_OUTPUT},
+        });
+        if(!source || !decoder_->request_output(*source,MUSIC_OUTPUT) ||
+                !decoder_->set_active_source(MUSIC_OUTPUT,MUSIC_SOURCE)){
+            if(source) (void)decoder_->unregister_source(*source);
+            decoder_=nullptr; decoder_binding_.release(); set_status("Speaker unavailable"); return;
+        }
+        source_id_=*source;
         stop_requested_=false; paused_=false; running_=true;
         playback_state_=static_cast<int>(PlaybackState::Loading);
         last_displayed_state_=PlaybackState::Loading;
@@ -198,15 +215,22 @@ private:
     void stop_audio(){
         stop_requested_=true; paused_=false;
         if(worker_.joinable()) worker_.join();
-        if(player_ && player_open_.exchange(false)){
-            if(player_->is_pa_on_off_supported()) (void)player_->set_pa_on_off(false);
-            player_->close();
+        if(decoder_ && source_id_!=0){
+            if(stream_open_.exchange(false)) (void)decoder_->close_stream(source_id_,MUSIC_OUTPUT);
+            (void)decoder_->release_output(source_id_,MUSIC_OUTPUT);
+            (void)decoder_->unregister_source(source_id_);
         }
-        player_.reset(); running_=false;
+        source_id_=0; decoder_=nullptr; decoder_binding_.release(); running_=false;
+    }
+
+    bool write_pcm(const uint8_t *data,size_t size){
+        return decoder_ && source_id_!=0 && decoder_->write_stream(
+            source_id_,MUSIC_OUTPUT,service::RawBuffer(data,size),1000
+        )==service::AudioWriteResult::Written;
     }
 
     bool write_fade(std::vector<int16_t> &last_samples,uint32_t sample_rate,uint8_t channels){
-        if(!player_ || last_samples.size()!=channels || channels==0) return false;
+        if(!decoder_ || last_samples.size()!=channels || channels==0) return false;
         const size_t frames=std::max<size_t>(sample_rate/100,1); // 10 ms
         std::vector<int16_t> fade(frames*channels);
         for(size_t n=0;n<frames;++n){
@@ -214,7 +238,7 @@ private:
             for(size_t ch=0;ch<channels;++ch) fade[n*channels+ch]=static_cast<int16_t>(last_samples[ch]*gain);
         }
         std::fill(last_samples.begin(),last_samples.end(),0);
-        return player_->write_data(reinterpret_cast<const uint8_t*>(fade.data()),fade.size()*sizeof(int16_t));
+        return write_pcm(reinterpret_cast<const uint8_t*>(fade.data()),fade.size()*sizeof(int16_t));
     }
 
     void playback_loop(){
@@ -254,7 +278,7 @@ private:
                 was_paused=true;
                 const size_t silence_frames=std::max<size_t>(info.sample_rate/100,1);
                 std::vector<int16_t> silence(silence_frames*info.channel,0);
-                if(!player_->write_data(reinterpret_cast<const uint8_t*>(silence.data()),silence.size()*sizeof(int16_t))){ failed=true; break; }
+                if(!write_pcm(reinterpret_cast<const uint8_t*>(silence.data()),silence.size()*sizeof(int16_t))){ failed=true; break; }
                 continue;
             }
             if(was_paused){ gain=0.0f; was_paused=false; }
@@ -294,11 +318,15 @@ private:
                             info.channel==0 || info.channel>2 || info.sample_rate==0){
                         playback_state_=static_cast<int>(PlaybackState::FormatError); failed=true; break;
                     }
-                    if(!player_->open({.bits=info.bits_per_sample,.channels=info.channel,.sample_rate=info.sample_rate})){
+                    service::AudioStreamConfig stream_config{
+                        .type=service::AudioCodecFormat::PCM,
+                        .general={.channels=info.channel,.sample_bits=info.bits_per_sample,.sample_rate=info.sample_rate,.frame_duration=10},
+                        .queue_size_bytes=32*1024,
+                    };
+                    if(!decoder_ || !decoder_->open_stream(source_id_,MUSIC_OUTPUT,stream_config)){
                         playback_state_=static_cast<int>(PlaybackState::OutputError); failed=true; break;
                     }
-                    if(player_->is_pa_on_off_supported()) (void)player_->set_pa_on_off(true);
-                    output_open=true; player_open_=true; last_samples.assign(info.channel,0);
+                    output_open=true; stream_open_=true; last_samples.assign(info.channel,0);
                     playback_state_=static_cast<int>(PlaybackState::Playing);
                     ESP_LOGI(TAG,"Playing MP3: %" PRIu32 " Hz, %u channel(s), %u-bit",info.sample_rate,info.channel,info.bits_per_sample);
                 }
@@ -311,7 +339,7 @@ private:
                     pcm[i]=static_cast<int16_t>(static_cast<float>(pcm[i])*gain);
                     last_samples[i%info.channel]=pcm[i];
                 }
-                if(!player_->write_data(frame.buffer,frame.decoded_size)){
+                if(!write_pcm(frame.buffer,frame.decoded_size)){
                     playback_state_=static_cast<int>(PlaybackState::OutputError); failed=true; break;
                 }
             }
@@ -322,11 +350,16 @@ private:
         running_=false;
     }
     system::core::AppContext *context_=nullptr; system::core::TimerId timer_=0;
-    std::atomic_bool running_=false,paused_=false,stop_requested_=true,muted_=false,player_open_=false;
+    static constexpr const char *MUSIC_SOURCE="MusicPlayer";
+    static constexpr const char *MUSIC_OUTPUT="Speaker0";
+    std::atomic_bool running_=false,paused_=false,stop_requested_=true,muted_=false,stream_open_=false;
     std::atomic_int volume_=70;
     std::atomic_int playback_state_=static_cast<int>(PlaybackState::Ready);
     PlaybackState last_displayed_state_=PlaybackState::Ready;
-    hal::InterfaceHandle<hal::audio::CodecPlayerIface> player_; boost::thread worker_;
+    service::ServiceBinding decoder_binding_;
+    service::AudioDecoder *decoder_=nullptr;
+    uint32_t source_id_=0;
+    boost::thread worker_;
     std::vector<gui::ScopedConnection> connections_;
 };
 
@@ -353,14 +386,29 @@ public:
         context_=&c;
         connections_=c.gui().subscribe_actions({{.action="app.close",.handler=[this](const gui::Event &){ if(context_) context_->system_service().request_close_app(context_->app_id()); }}});
         auto timer=c.timer().start_periodic("spectrum.refresh",80); if(timer) timer_=*timer;
-        recorder_=hal::acquire_first_interface<hal::audio::CodecRecorderIface>();
-        if(!recorder_ || !recorder_->open()){
+        encoder_binding_=service::ServiceManager::get_instance().bind(AudioEncoderHelper::get_name().data());
+        auto *encoder=service::AudioEncoder::get_instance(0);
+        if(!encoder_binding_.is_valid() || !encoder){
             capture_state_=-1; (void)c.gui().set_text("/spectrum/status","Microphone unavailable"); return {};
         }
-        const auto info=recorder_->get_info(); channels_=std::max<int>(info.channels,1); sample_rate_=info.sample_rate;
-        capture_state_=1; running_=true;
-        BROOKESIA_THREAD_CONFIG_GUARD({.stack_size=20*1024});
-        worker_=boost::thread([this]{ capture_loop(); }); return {};
+        encoder_connection_=encoder->connect_encoded_data([this](const service::RawBuffer &buffer){
+            process_capture(buffer.data_ptr,buffer.data_size);
+        });
+        service::AudioEncoderDynamicConfig config{
+            .type=service::AudioCodecFormat::PCM,
+            .general={.channels=4,.sample_bits=16,.sample_rate=48000,.frame_duration=10},
+            .fetch_interval_ms=10,
+            .fetch_data_size=3840,
+            .enable_afe=false,
+        };
+        channels_=config.general.channels; sample_rate_=config.general.sample_rate;
+        auto started=AudioEncoderHelper::call_function_sync(
+            AudioEncoderHelper::FunctionId::Start,BROOKESIA_DESCRIBE_TO_JSON(config).as_object());
+        if(!started){
+            encoder_connection_.disconnect(); encoder_binding_.release(); capture_state_=-1;
+            (void)c.gui().set_text("/spectrum/status","Microphone unavailable"); return {};
+        }
+        capture_state_=1; return {};
     }
     std::expected<void,std::string> on_timer(system::core::AppContext &c,system::core::TimerId,std::string_view) override {
         for(size_t i=0;i<levels_.size();++i) (void)c.gui().set_value("/spectrum/bars/bar"+std::to_string(i),levels_[i].load());
@@ -377,18 +425,20 @@ public:
     }
     std::expected<void,std::string> on_stop(system::core::AppContext &c) override { if(timer_) c.timer().stop(timer_); stop_capture(); connections_.clear(); context_=nullptr; return {}; }
 private:
-    void stop_capture(){ running_=false; if(worker_.joinable()) worker_.join(); if(recorder_) recorder_->close(); recorder_.reset(); }
-    void capture_loop(){
-        constexpr size_t frames=512;
+    void stop_capture(){
+        if(encoder_binding_.is_valid()) (void)AudioEncoderHelper::call_function_sync(AudioEncoderHelper::FunctionId::Stop);
+        encoder_connection_.disconnect(); encoder_binding_.release();
+    }
+    void process_capture(const uint8_t *data,size_t size){
         constexpr float display_floor_db=-75.0f;
         constexpr float display_ceiling_db=-15.0f;
         constexpr float display_range_db=display_ceiling_db-display_floor_db;
-        const auto info=recorder_->get_info(); const size_t channels=std::max<size_t>(info.channels,1);
-        const float sample_rate=static_cast<float>(info.sample_rate ? info.sample_rate : 48000);
-        std::vector<int16_t> pcm(frames*channels);
+        const size_t channels=std::max(channels_.load(),1);
+        const size_t frames=size/(sizeof(int16_t)*channels);
+        if(!data || frames==0) return;
+        const auto *pcm=reinterpret_cast<const int16_t*>(data);
+        const float sample_rate=static_cast<float>(sample_rate_.load() ? sample_rate_.load() : 48000);
         constexpr float pi=3.14159265358979323846f;
-        while(running_){
-            if(!recorder_->read_data(reinterpret_cast<uint8_t*>(pcm.data()),pcm.size()*sizeof(int16_t))){ capture_state_=-2; break; }
             size_t best_channel=0; uint64_t best_energy=0; int32_t best_mean=0;
             for(size_t ch=0;ch<channels;++ch){
                 int64_t sum=0; for(size_t n=0;n<frames;++n) sum+=pcm[n*channels+ch];
@@ -420,11 +470,10 @@ private:
                 const int value=std::clamp(static_cast<int>((db-display_floor_db)*100.0f/display_range_db),0,100);
                 levels_[band]=(levels_[band].load()*2+value)/3;
             }
-        }
-        running_=false;
     }
-    system::core::AppContext *context_=nullptr; system::core::TimerId timer_=0; std::atomic_bool running_=false;
-    hal::InterfaceHandle<hal::audio::CodecRecorderIface> recorder_; boost::thread worker_;
+    system::core::AppContext *context_=nullptr; system::core::TimerId timer_=0;
+    service::ServiceBinding encoder_binding_;
+    lib_utils::scoped_connection encoder_connection_;
     std::array<std::atomic_int,16> levels_{};
     std::atomic_int capture_state_=0,peak_meter_=0,peak_db_tenths_=-960,active_channel_=0,channels_=0;
     std::atomic_uint32_t sample_rate_=0;

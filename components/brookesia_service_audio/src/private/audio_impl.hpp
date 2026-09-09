@@ -34,6 +34,9 @@
 
 namespace esp_brookesia::service {
 
+std::shared_ptr<hal::audio::DecoderIface> make_codec_decoder_fallback();
+std::shared_ptr<hal::audio::EncoderIface> make_codec_encoder_fallback();
+
 constexpr size_t ENCODER_FETCH_DATA_SIZE_MORE = 100;
 constexpr const char *DECODER_OUTPUT_NAME = "Speaker0";
 constexpr const char *DECODER_OUTPUT_ROLE = "speaker";

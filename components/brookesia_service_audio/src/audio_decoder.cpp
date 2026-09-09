@@ -540,9 +540,15 @@ bool AudioDecoder::on_start()
                               hal::audio::DecoderIface::get_default_instance_name(id_)
                           );
     auto decoder_iface = decoder_handle.get();
-    BROOKESIA_CHECK_NULL_RETURN(decoder_iface, false, "Failed to get audio decoder interface");
+    if (decoder_iface == nullptr) {
+        decoder_iface = make_codec_decoder_fallback();
+        BROOKESIA_CHECK_NULL_RETURN(decoder_iface, false, "Failed to create codec decoder fallback");
+        BROOKESIA_LOGW("Audio processor unavailable; using PCM codec player fallback");
+    } else {
+        decoder_iface_handle_ = std::move(decoder_handle);
+    }
     std::lock_guard lock(decoder_state_mutex_);
-    decoder_iface_ = std::move(decoder_handle);
+    decoder_iface_ = std::move(decoder_iface);
     outputs_ = {
         OutputContext{
             .info = AudioOutputInfo{
@@ -574,6 +580,7 @@ void AudioDecoder::on_stop()
     sources_.clear();
     outputs_.clear();
     decoder_iface_.reset();
+    decoder_iface_handle_.reset();
 }
 
 

@@ -328,7 +328,8 @@ private:
     void on_wake_end_timeout(uint32_t session_id);
 
     int id_ = 0;
-    hal::InterfaceHandle<hal::audio::EncoderIface> encoder_iface_;
+    hal::InterfaceHandle<hal::audio::EncoderIface> encoder_iface_handle_;
+    std::shared_ptr<hal::audio::EncoderIface> encoder_iface_;
     lib_utils::TaskSchedulerTaskId encoder_fetch_task_id_ = 0;
     AudioEncoderDynamicConfig encoder_config_{};
     std::mutex encoder_state_mutex_;
@@ -571,7 +572,8 @@ private:
     mutable std::mutex decoder_state_mutex_;
     std::mutex decoder_hal_mutex_;
     std::condition_variable decoder_queue_cv_;
-    hal::InterfaceHandle<hal::audio::DecoderIface> decoder_iface_;
+    hal::InterfaceHandle<hal::audio::DecoderIface> decoder_iface_handle_;
+    std::shared_ptr<hal::audio::DecoderIface> decoder_iface_;
     std::vector<OutputContext> outputs_;
     std::unordered_map<uint32_t, SourceContext> sources_;
     uint32_t next_source_id_ = 1;
