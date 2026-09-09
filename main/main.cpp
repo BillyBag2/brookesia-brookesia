@@ -140,7 +140,9 @@ void bring_up_brookesia()
     config.core_config.environment = {
         .width_px = static_cast<int32_t>(display->width),
         .height_px = static_cast<int32_t>(display->height),
-        .density = 1.0F,
+        // Scale dp/sp UI metrics for the Tab5's high-density 5-inch panel.
+        // The framebuffer and pixel-sized media remain at the native resolution.
+        .density = 1.5F,
         .font_scale = 1.0F,
     };
 
