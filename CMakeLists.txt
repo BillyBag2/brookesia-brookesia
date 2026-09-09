@@ -24,9 +24,29 @@ project(sample_project)
 # Package Brookesia's staged UI resources into the runtime filesystem and
 # include that image in the normal `idf.py flash` command.
 get_property(brookesia_resource_targets GLOBAL PROPERTY BROOKESIA_SYSTEM_SUPER_STAGE_TARGETS)
+
+# Apply project-owned Settings layout fixes after the managed component stages
+# its package. Keeping these overrides outside managed_components makes them
+# survive component refreshes and normal rebuilds.
+set(settings_override_root
+    "${CMAKE_CURRENT_LIST_DIR}/resource_overrides/apps/brookesia.general.settings/res"
+)
+set(settings_staged_root
+    "${CMAKE_CURRENT_LIST_DIR}/littlefs/apps/brookesia.general.settings/res"
+)
+add_custom_target(apply_settings_resource_overrides
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${settings_override_root}/screens/header.json"
+        "${settings_staged_root}/screens/header.json"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${settings_override_root}/constants/portrait.json"
+        "${settings_staged_root}/constants/portrait.json"
+    DEPENDS ${brookesia_resource_targets}
+    VERBATIM
+)
 littlefs_create_partition_image(
     littlefs_data
     "${CMAKE_CURRENT_LIST_DIR}/littlefs"
     FLASH_IN_PROJECT
-    DEPENDS ${brookesia_resource_targets}
+    DEPENDS apply_settings_resource_overrides
 )

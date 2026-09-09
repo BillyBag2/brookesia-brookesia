@@ -61,6 +61,38 @@ These files configure host support. Wi-Fi use also requires compatible
 ESP-Hosted SDIO firmware on the C6 and application initialization; `app_main`
 is currently empty. Hardware operation has not yet been tested.
 
+## Touch debug overlay
+
+The application has an optional on-screen touch diagnostic. While a touch is
+held, it draws a red circle at the processed LVGL position and displays its
+`x`/`y` coordinates. This helps distinguish touch-coordinate and calibration
+problems from GUI hit-target or gesture-handling problems.
+
+Enable or disable it with:
+
+```powershell
+idf.py menuconfig
+```
+
+Then open **Application diagnostics** and toggle **Show touch points and
+coordinates**. The corresponding configuration symbol is
+`CONFIG_APP_TOUCH_DEBUG_OVERLAY`. The Tab5 board defaults currently enable it
+in `sdkconfig.m5_stack_tab5`; set the following value there to keep it disabled
+when regenerating `sdkconfig`:
+
+```text
+# CONFIG_APP_TOUCH_DEBUG_OVERLAY is not set
+```
+
+After changing the option, rebuild and flash the application:
+
+```powershell
+idf.py -B build-brookesia app-flash monitor
+```
+
+The overlay is compiled into the application and does not require the
+LittleFS partition to be reflashed.
+
 ## Specification table
 
 Manufacturer specifications checked on 2026-09-07. The Waveshare column covers the relay version, **ESP32-P4-86-Panel-ETH-2RO**. The M5 Stack POE board is treated as **Unit PoE-P4 (U213)**. See the linked board pages for sources, pinouts, and schematics.
