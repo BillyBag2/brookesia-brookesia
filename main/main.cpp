@@ -18,6 +18,7 @@
 #include "brookesia/service_helper/media/display.hpp"
 #include "brookesia/service_manager/service/manager.hpp"
 #include "brookesia/system_super.hpp"
+#include "esp_board_manager.h"
 #include "sdkconfig.h"
 
 #undef BROOKESIA_LOG_TAG
@@ -113,6 +114,17 @@ void bring_up_brookesia()
         BROOKESIA_LOGE("Failed to start the Brookesia service manager");
         return;
     }
+
+#if CONFIG_ESP_BOARD_M5STACK_TAB5
+    // The second Tab5 I/O expander drives WLAN_PWR_EN on P0. It is otherwise
+    // unused by the active services, so Board Manager will not initialize it.
+    auto wifi_power_result = esp_board_manager_init_device_by_name("gpio_expander_2");
+    if (wifi_power_result != ESP_OK) {
+        BROOKESIA_LOGE("Failed to enable the Tab5 Wi-Fi coprocessor power: %1%", esp_err_to_name(wifi_power_result));
+    } else {
+        BROOKESIA_LOGI("Tab5 Wi-Fi coprocessor power enabled");
+    }
+#endif
 
     auto display = start_display();
     if (!display.has_value()) {
