@@ -177,11 +177,32 @@ Versions below were checked against the [ESP Component Registry](https://compone
 - [ ] RTC support (Epson RX8130CE)
 - [ ] SDIO microSD card access.
 - [ ] RS485 communication.
-- [ ] Sound output to ES8388 codec. (WIP)
-- [ ] Microphone input from ES7210 codec.
-- [ ] Audio volume control through Brookesia AV/audio processor.
+- [x] Sound output to ES8388 codec through the shared `AudioDecoder0` service.
+- [x] Microphone input from ES7210 codec through the shared `AudioEncoder0` service.
+- [x] Shared audio volume and mute control through the `AudioPlayback` service.
 - [ ] Camera input from SC2356.
 - [ ] Battery status and charging.
 - [ ] Motion sensor BMI270. (orientation, shake detection, others?)
 - [ ] Video playback.
 - [ ] M5 Stack Keyboard support.
+
+#### Audio HAL work
+
+Current implementation:
+
+- The board HAL exposes `CodecPlayerIface` and `CodecRecorderIface`. Applications should not acquire these interfaces directly.
+- `components/brookesia_service_audio/src/codec_fallback.cpp` adapts those codec interfaces to the shared decoder and encoder services when the optional Brookesia AV processor is unavailable.
+- `AudioDecoder0` owns speaker PCM streaming, buffering and active-source selection. `AudioEncoder0` owns microphone capture and publishes captured PCM to subscribers.
+- The Music Player keeps MP3 decoding in the application but submits decoded PCM to `AudioDecoder0`. The Spectrum Analyser consumes PCM from `AudioEncoder0`.
+- The codec fallbacks currently support 16-bit PCM. Speaker output accepts one or two channels; microphone capture must match the recorder's native format.
+
+Remaining work:
+
+- Add microphone client arbitration. AudioEncoder0 currently has one global start/stop configuration, so one app could stop capture while another is using it.
+- Expose recorder capabilities through the service instead of Spectrum hard-coding 48 kHz, 16-bit, four-channel input.
+- Consolidate volume/mute and PCM output into one speaker session. They are both service-owned now, but use separate handles to the same codec interface.
+- Add recovery for codec read/write failures and service restarts.
+- Add automated tests for the codec fallbacks, simultaneous clients, source switching and mute/volume during playback.
+- Optionally move MP3 decoding into a reusable media service. That is above the HAL; the Music Player currently decodes MP3 itself and submits PCM.
+
+For microphone arbitration, use per-client leases or reference-counted sessions: capture starts for the first compatible client and stops after the last client releases it. Reject incompatible concurrent formats with a clear error. Capability discovery should remove board-specific channel and sample-rate constants from applications. A task is complete when two capture clients can start and stop independently without interrupting each other, and existing single-client playback and capture still pass on the Tab5 hardware.
