@@ -1,4 +1,35 @@
 dependencies:
+  espressif/brookesia_app_settings:
+    component_hash: 46dd5de734a74672203240420fd52967b3f61f9882b600813d24b1fccd3204a5
+    dependencies:
+    - name: espressif/brookesia_hal_interface
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    - name: espressif/brookesia_service_device
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    - name: espressif/brookesia_service_sntp
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    - name: espressif/brookesia_service_storage
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    - name: espressif/brookesia_service_wifi
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    - name: espressif/brookesia_system_core
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.8.*
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.8.3
   espressif/brookesia_gui_interface:
     component_hash: 8fdb7914e96fb869f2b4cd9bc590af06e1928a78cb1f64526f6cc2979080a2a2
     dependencies:
@@ -955,6 +986,7 @@ dependencies:
       type: service
     version: 9.4.0
 direct_dependencies:
+- espressif/brookesia_app_settings
 - espressif/brookesia_gui_lvgl
 - espressif/brookesia_hal_adaptor
 - espressif/brookesia_service_device
@@ -971,6 +1003,6 @@ direct_dependencies:
 - idf
 - joltwallet/littlefs
 - lvgl/lvgl
-manifest_hash: bba39c5e125831c977b4b0e37616d0ff1e7a02ecee69bc5923fc4d0e3eb81ea0
+manifest_hash: 077316a779a983f8db268a5eb6156aca1bdc19b93576c1c5428a3f7ed32a875f
 target: esp32p4
 version: 3.0.0

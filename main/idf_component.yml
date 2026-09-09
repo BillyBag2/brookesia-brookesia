@@ -13,6 +13,8 @@ dependencies:
     version: "0.8.*"
   espressif/brookesia_service_device:
     version: "0.8.*"
+  espressif/brookesia_app_settings:
+    version: "0.8.3"
   joltwallet/littlefs:
     version: "^1.20.4"
 
