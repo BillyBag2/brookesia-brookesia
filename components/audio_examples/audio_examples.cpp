@@ -371,7 +371,7 @@ public:
             const int db10=peak_db_tenths_.load();
             const std::string db=(db10<=-960) ? "silence" : std::to_string(db10/10)+"."+std::to_string(std::abs(db10%10))+" dBFS";
             (void)c.gui().set_text("/spectrum/status","Mic "+std::to_string(channels_.load())+"ch @ "+
-                std::to_string(sample_rate_.load())+" Hz | active "+std::to_string(active_channel_.load()+1)+" | "+db);
+                std::to_string(sample_rate_.load())+" Hz | strongest "+std::to_string(active_channel_.load()+1)+" | "+db);
         }
         return {};
     }
@@ -380,6 +380,9 @@ private:
     void stop_capture(){ running_=false; if(worker_.joinable()) worker_.join(); if(recorder_) recorder_->close(); recorder_.reset(); }
     void capture_loop(){
         constexpr size_t frames=512;
+        constexpr float display_floor_db=-75.0f;
+        constexpr float display_ceiling_db=-15.0f;
+        constexpr float display_range_db=display_ceiling_db-display_floor_db;
         const auto info=recorder_->get_info(); const size_t channels=std::max<size_t>(info.channels,1);
         const float sample_rate=static_cast<float>(info.sample_rate ? info.sample_rate : 48000);
         std::vector<int16_t> pcm(frames*channels);
@@ -399,7 +402,7 @@ private:
             for(size_t n=0;n<frames;++n) peak=std::max(peak,std::abs(static_cast<int32_t>(pcm[n*channels+best_channel])-best_mean));
             const float peak_db=peak>0 ? 20.0f*std::log10(static_cast<float>(peak)/32768.0f) : -96.0f;
             peak_db_tenths_=static_cast<int>(std::round(std::max(peak_db,-96.0f)*10.0f));
-            const int meter=std::clamp(static_cast<int>((peak_db+60.0f)*100.0f/60.0f),0,100);
+            const int meter=std::clamp(static_cast<int>((peak_db-display_floor_db)*100.0f/display_range_db),0,100);
             peak_meter_=(peak_meter_.load()*3+meter)/4;
             for(size_t band=0;band<levels_.size();++band){
                 const float freq=125.0f*std::pow(1.32f,static_cast<float>(band));
@@ -410,9 +413,11 @@ private:
                     const float s0=sample+coefficient*s1-s2; s2=s1; s1=s0;
                 }
                 const float power=std::max(s1*s1+s2*s2-coefficient*s1*s2,0.0f);
-                const float magnitude=std::sqrt(power)/static_cast<float>(frames);
+                // Goertzel yields one side of the spectrum for real PCM. Double it
+                // to report the equivalent sinusoidal amplitude.
+                const float magnitude=2.0f*std::sqrt(power)/static_cast<float>(frames);
                 const float db=20.0f*std::log10(magnitude+0.000001f);
-                const int value=std::clamp(static_cast<int>((db+65.0f)*100.0f/60.0f),0,100);
+                const int value=std::clamp(static_cast<int>((db-display_floor_db)*100.0f/display_range_db),0,100);
                 levels_[band]=(levels_[band].load()*2+value)/3;
             }
         }

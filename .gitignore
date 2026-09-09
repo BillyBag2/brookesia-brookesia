@@ -21,6 +21,7 @@
 # ESP-IDF's default build directory and named variants such as
 # build-debug, build-release, and build-brookesia.
 **/build*/
+.ccache/
 *.o
 *.a
 *.out
