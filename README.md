@@ -161,3 +161,27 @@ Versions below were checked against the [ESP Component Registry](https://compone
 | `brookesia_app_files` | Not published | 0.8.2 |
 | `brookesia_app_settings` | Not published | 0.8.3 |
 | `brookesia_app_store` | Not published | 0.8.2 |
+
+## TODO
+
+### TAB5
+
+- [x] Backlight
+- [x] Display
+- [x] Touch
+- [x] Backlight brightness.
+- [ ] Wifi to C6 module.
+  - [x] Connect.
+  - [ ] Data
+- [ ] NTP time sync through C6 module
+- [ ] RTC support (Epson RX8130CE)
+- [ ] SDIO microSD card access.
+- [ ] RS485 communication.
+- [ ] Sound output to ES8388 codec. (WIP)
+- [ ] Microphone input from ES7210 codec.
+- [ ] Audio volume control through Brookesia AV/audio processor.
+- [ ] Camera input from SC2356.
+- [ ] Battery status and charging.
+- [ ] Motion sensor BMI270. (orientation, shake detection, others?)
+- [ ] Video playback.
+- [ ] M5 Stack Keyboard support.

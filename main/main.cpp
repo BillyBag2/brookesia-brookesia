@@ -17,6 +17,7 @@
 #include "brookesia/lib_utils/log.hpp"
 #include "brookesia/lib_utils/thread_config.hpp"
 #include "brookesia/service_helper/media/display.hpp"
+#include "brookesia/service_helper/media/audio.hpp"
 #include "brookesia/service_manager/service/manager.hpp"
 #include "brookesia/system_super.hpp"
 #include "esp_board_manager.h"
@@ -32,6 +33,7 @@ using namespace esp_brookesia;
 namespace {
 
 using DisplayHelper = service::helper::Display;
+using AudioPlaybackHelper = service::helper::AudioPlayback;
 constexpr uint32_t DISPLAY_SERVICE_TIMEOUT_MS = 1000;
 constexpr uint16_t SHELL_VERTICAL_EDGE_GESTURE_PX = 24;
 
@@ -240,6 +242,17 @@ void bring_up_brookesia()
     if (!start_result.has_value()) {
         BROOKESIA_LOGE("Brookesia system startup failed: %1%", start_result.error());
         return;
+    }
+
+    // Keep the system audio-control service alive. It loads the persisted
+    // volume/mute state once and applies it through the shared codec interface,
+    // so every app that writes to the ES8388 inherits the same controls.
+    static auto audio_playback_binding =
+        service::ServiceManager::get_instance().bind(AudioPlaybackHelper::get_name().data());
+    if (!audio_playback_binding.is_valid()) {
+        BROOKESIA_LOGW("Failed to keep the AudioPlayback control service running");
+    } else {
+        BROOKESIA_LOGI("System audio volume/mute control ready");
     }
 
     // The shell defaults its top/bottom edge gesture zone to 8% of the

@@ -6,8 +6,8 @@
         "scrollable": false
     },
     "style": {
-        "paddingTop": "10dp",
-        "padding": 0
+        "padding": 0,
+        "paddingTop": "10dp"
     },
     "children": [
         {

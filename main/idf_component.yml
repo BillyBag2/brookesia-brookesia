@@ -13,6 +13,15 @@ dependencies:
     version: "0.8.*"
   espressif/brookesia_service_device:
     version: "0.8.*"
+  # Speaker/microphone playback and capture services used by the audio demos.
+  espressif/brookesia_service_audio:
+    version: "0.8.*"
+    override_path: "../components/brookesia_service_audio"
+  # Standalone codec library for file-backed MP3 playback. This does not pull
+  # in the incompatible ESP-SR/AV-processor stack.
+  espressif/esp_audio_codec:
+    # 2.6.x requires ESP32-P4 revision 3; the TAB5 board is revision 1.
+    version: ">=2.5.0,<2.6.0"
   espressif/brookesia_app_settings:
     version: "0.8.3"
   joltwallet/littlefs:
