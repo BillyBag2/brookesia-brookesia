@@ -1,17 +1,29 @@
 {
+  "cSpell.language": "en-GB,en-US",
   "cSpell.words": [
+    "bmgr",
     "Brookesia",
+    "espressif",
+    "Iface",
+    "Kconfig",
+    "LVGL",
     "Mainboard",
+    "malloc",
     "Mbps",
+    "menuconfig",
     "MIPI",
     "optocoupler",
     "Pinout",
     "pinouts",
     "PSRAM",
+    "PYTHONUTF8",
+    "reflashed",
     "SDIO",
+    "sdkconfig",
     "supercapacitor",
     "UART",
-    "Waveshare"
+    "Waveshare",
+    "xiaozhi"
   ],
   "idf.currentSetup": "C:\\esp\\v6.1\\esp-idf",
   "idf.openOcdConfigs": [
@@ -27,5 +39,5 @@
     "--compile-commands-dir=c:\\repos\\brookesia-brookesia\\build"
   ],
   "idf.flashType": "UART",
-  "idf.portWin": "COM3"
+  "idf.portWin": "COM5"
 }

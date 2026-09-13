@@ -1,0 +1,6 @@
+# Keep text consistent across editors, generated resources, and platforms.
+* text=auto eol=lf
+
+# Windows command scripts require Windows line endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf

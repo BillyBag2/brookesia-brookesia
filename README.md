@@ -4,6 +4,16 @@
 
 An attempt to create ESP-Brookesia, for a number of boards that I have.
 
+## Building the project for the first time
+
+If the project fails to configure for the first time in an IDF terminal use...
+
+```powershell
+$env:PYTHONUTF8 = "1"
+python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+idf.py reconfigure
+```
+
 ## Target hardware (wish list)
 
 - ESP32-P4
@@ -30,11 +40,26 @@ then uncomment exactly one `sdkconfig.<board>` entry and comment out the other
 board entries.
 
 For TAB5, run an initial `idf.py reconfigure` to download the managed
-components, then generate its LCD and touch configuration with:
+components, then generate its display and audio board configuration with:
 
 ```powershell
 idf.py bmgr -b m5stack_tab5
 ```
+
+On a fresh checkout, the initial reconfigure can stop with a missing
+`BROOKESIA_HAL_ADAPTOR_AUDIO_ENABLE_PROCESSOR_IMPL` warning before the `bmgr`
+command is registered. Once the managed components have downloaded, run the
+generator directly from the repository root in the ESP-IDF terminal:
+
+```powershell
+$env:PYTHONUTF8 = "1"
+python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+idf.py build
+```
+
+This restores `components/gen_bmgr_codes`, including the codec capabilities
+needed to resolve the audio Kconfig conditions. Keep the audio processor
+disabled in `sdkconfig.m5_stack_tab5`; enabling it is not a fix for this warning.
 
 Run `idf.py reconfigure` again after generation. The root `CMakeLists.txt`
 remains the source of truth for the selected project target.
