@@ -6,6 +6,7 @@
     "espressif",
     "Iface",
     "Kconfig",
+    "littlefs",
     "LVGL",
     "Mainboard",
     "malloc",
@@ -39,5 +40,34 @@
     "--compile-commands-dir=c:\\repos\\brookesia-brookesia\\build"
   ],
   "idf.flashType": "UART",
-  "idf.portWin": "COM5"
+  "idf.portWin": "COM3",
+  "peacock.color": "#2b165a",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#3f2083",
+    "activityBar.activeBorder": "#e7e7e7",
+    "activityBar.background": "#3f2083",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#b3562c",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "activityBarTop.activeBackground": "#3f2083",
+    "activityBarTop.activeBorder": "#e7e7e7",
+    "activityBarTop.background": "#3f2083",
+    "activityBarTop.foreground": "#e7e7e7",
+    "activityBarTop.inactiveForeground": "#e7e7e799",
+    "commandCenter.border": "#e7e7e799",
+    "commandCenter.foreground": "#e7e7e7",
+    "sash.hoverBorder": "#3f2083",
+    "statusBar.background": "#2b165a",
+    "statusBar.debuggingBackground": "#2b165a",
+    "statusBar.debuggingForeground": "#e7e7e7",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#3f2083",
+    "statusBarItem.remoteBackground": "#9a4926",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#2b165a",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#2b165a99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  }
 }

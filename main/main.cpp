@@ -11,6 +11,8 @@
 #include "boost/json/array.hpp"
 #include "boost/json/value.hpp"
 #include "boost/thread.hpp"
+#include "brookesia/board/config.hpp"
+#include "brookesia/board/native.hpp"
 #include "brookesia/gui_lvgl.hpp"
 #include "brookesia/lib_utils/check.hpp"
 #include "brookesia/lib_utils/describe_helpers.hpp"
@@ -20,7 +22,6 @@
 #include "brookesia/service_helper/media/audio.hpp"
 #include "brookesia/service_manager/service/manager.hpp"
 #include "brookesia/system_super.hpp"
-#include "esp_board_manager.h"
 #include "esp_lv_adapter.h"
 #include "lvgl.h"
 #include "sdkconfig.h"
@@ -201,16 +202,11 @@ void bring_up_brookesia()
         return;
     }
 
-#if CONFIG_ESP_BOARD_M5STACK_TAB5
-    // The second Tab5 I/O expander drives WLAN_PWR_EN on P0. It is otherwise
-    // unused by the active services, so Board Manager will not initialize it.
-    auto wifi_power_result = esp_board_manager_init_device_by_name("gpio_expander_2");
-    if (wifi_power_result != ESP_OK) {
-        BROOKESIA_LOGE("Failed to enable the Tab5 Wi-Fi coprocessor power: %1%", esp_err_to_name(wifi_power_result));
+    if (!board::prepare_native_hardware()) {
+        BROOKESIA_LOGE("Failed to prepare board-specific hardware");
     } else {
-        BROOKESIA_LOGI("Tab5 Wi-Fi coprocessor power enabled");
+        BROOKESIA_LOGI("Board-specific hardware ready");
     }
-#endif
 
     auto display = start_display();
     if (!display.has_value()) {
@@ -223,13 +219,14 @@ void bring_up_brookesia()
 
     system::super::System::Config config;
     config.core_config.gui_backend = std::make_unique<gui::lvgl::Backend>();
+    constexpr auto appearance = board::appearance_config();
     config.core_config.environment = {
         .width_px = static_cast<int32_t>(display->width),
         .height_px = static_cast<int32_t>(display->height),
-        // Scale dp/sp UI metrics for the Tab5's high-density 5-inch panel.
+        // Scale dp/sp UI metrics using the selected board's shared profile.
         // The framebuffer and pixel-sized media remain at the native resolution.
-        .density = 1.5F,
-        .font_scale = 1.0F,
+        .density = appearance.density,
+        .font_scale = appearance.font_scale,
     };
 
     auto init_result = system_instance->init(std::move(config));
