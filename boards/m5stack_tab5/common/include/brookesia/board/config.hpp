@@ -10,7 +10,7 @@ struct AppearanceConfig {
 [[nodiscard]] constexpr AppearanceConfig appearance_config() noexcept
 {
     return {
-        .density = 1.5F,
+        .density = 1.0F,
         .font_scale = 1.0F,
     };
 }
