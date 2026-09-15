@@ -17,7 +17,7 @@ idf.py reconfigure
 ## Target hardware (wish list)
 
 - ESP32-P4
-  - [ ] M5 Stack TAB5
+  - [ ] M5 Stack TAB5 (WIP)
   - [ ] Waveshare ESP32-P4 86 box. (I have the relay version)
   - [ ] M5 Stack ESP32-P4 POE. (No screen as standard)
 
@@ -101,9 +101,9 @@ idf.py menuconfig
 
 Then open **Application diagnostics** and toggle **Show touch points and
 coordinates**. The corresponding configuration symbol is
-`CONFIG_APP_TOUCH_DEBUG_OVERLAY`. The Tab5 board defaults currently enable it
-in `sdkconfig.m5_stack_tab5`; set the following value there to keep it disabled
-when regenerating `sdkconfig`:
+`CONFIG_APP_TOUCH_DEBUG_OVERLAY`. The Tab5 board default keeps it disabled in
+`sdkconfig.m5_stack_tab5`; retain the following value when regenerating
+`sdkconfig`:
 
 ```text
 # CONFIG_APP_TOUCH_DEBUG_OVERLAY is not set
@@ -202,6 +202,11 @@ Versions below were checked against the [ESP Component Registry](https://compone
 - [ ] RTC support (Epson RX8130CE)
 - [ ] SDIO microSD card access.
 - [ ] RS485 communication.
+- [ ] Non-native apps.
+  - [ ] JavaScript
+  - [ ] Lua
+  - [ ] WebAssembly
+  - [ ] ELF
 - [x] Sound output to ES8388 codec through the shared `AudioDecoder0` service.
 - [x] Microphone input from ES7210 codec through the shared `AudioEncoder0` service.
 - [x] Shared audio volume and mute control through the `AudioPlayback` service.

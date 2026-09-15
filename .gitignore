@@ -29,6 +29,8 @@
 
 # ESP-IDF specific build outputs
 *.bin
+!/littlefs/system/super/shell/images/background/m5stack_tab5_portrait.bin
+!/resource_overrides/system/super/shell/images/background/m5stack_tab5_portrait.bin
 *.elf
 *.map
 flasher_args.json # Generated in build directory
