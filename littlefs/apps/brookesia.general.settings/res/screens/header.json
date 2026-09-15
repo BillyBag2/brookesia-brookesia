@@ -56,12 +56,9 @@
                     },
                     "events": [
                         {
-                            "type": "clicked",
+                            "type": "pressed",
                             "action": "settings.header.back"
                         }
-                    ],
-                    "interactionRefs": [
-                        "press.item"
                     ],
                     "styleRefs": [
                         "app.listItem"
@@ -84,22 +81,25 @@
                     },
                     "children": [
                         {
-                            "type": "image",
+                            "type": "label",
                             "id": "icon",
                             "commonProps": {
                                 "clickable": false
                             },
-                            "imageProps": {
-                                "src": "${image.header.back}",
-                                "innerAlign": "contain"
+                            "labelProps": {
+                                "text": "<"
                             },
                             "styleRefs": [
-                                "app.iconRecolor"
+                                "app.pageTitle"
                             ],
+                            "style": {
+                                "fontSize": "${constant.settings.font.title}",
+                                "textAlign": "center"
+                            },
                             "placement": {
                                 "mode": "flow",
-                                "width": "${constant.settings.layout.headerIconSize}",
-                                "height": "${constant.settings.layout.headerIconSize}"
+                                "width": "match",
+                                "height": "wrap"
                             }
                         }
                     ]
