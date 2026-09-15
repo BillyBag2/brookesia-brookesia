@@ -56,12 +56,15 @@
                     },
                     "events": [
                         {
-                            "type": "pressed",
+                            "type": "clicked",
                             "action": "settings.header.back"
                         }
                     ],
                     "styleRefs": [
                         "app.listItem"
+                    ],
+                    "interactionRefs": [
+                        "press.item"
                     ],
                     "style": {
                         "borderWidth": "0dp"
