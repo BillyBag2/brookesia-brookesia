@@ -35,6 +35,8 @@ using AudioDecoderHelper = service::helper::AudioDecoder<0>;
 using AudioEncoderHelper = service::helper::AudioEncoder<0>;
 constexpr std::string_view MUSIC_ID = "brookesia.example.music_player";
 constexpr std::string_view SPECTRUM_ID = "brookesia.example.spectrum_analyser";
+constexpr std::string_view APP_ICON_ID = "launcher_icon";
+constexpr std::string_view APP_ICON_PATH = "res/images/index.json";
 constexpr const char *MUSIC_FILE_PATH = "/littlefs/apps/brookesia.example.music_player/audio/example.mp3";
 constexpr const char *TAG = "AudioExamples";
 
@@ -93,6 +95,9 @@ public:
         manifest.version = "0.1.0";
         manifest.kind = system::core::AppKind::Native;
         manifest.visible = true;
+        manifest.icon_id = APP_ICON_ID;
+        manifest.icon_path = APP_ICON_PATH;
+        manifest.resource_dir = MUSIC_ID;
         return manifest;
     }
     system::core::AppGuiDescriptor get_gui_descriptor() const override {
@@ -373,6 +378,9 @@ public:
         manifest.version = "0.1.0";
         manifest.kind = system::core::AppKind::Native;
         manifest.visible = true;
+        manifest.icon_id = APP_ICON_ID;
+        manifest.icon_path = APP_ICON_PATH;
+        manifest.resource_dir = SPECTRUM_ID;
         return manifest;
     }
     system::core::AppGuiDescriptor get_gui_descriptor() const override {

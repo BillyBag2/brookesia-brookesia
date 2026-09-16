@@ -21,3 +21,9 @@ brookesia_stage_runtime_app_package(
     STAGE_ROOT "${audio_example_stage_root}"
     NO_INDEX
 )
+brookesia_stage_runtime_app_package(
+    PACKAGE_ID "brookesia.example.spectrum_analyser"
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/package/spectrum_analyser"
+    STAGE_ROOT "${audio_example_stage_root}"
+    NO_INDEX
+)
