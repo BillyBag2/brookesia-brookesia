@@ -14,6 +14,36 @@ python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py 
 idf.py reconfigure
 ```
 
+## Build and package firmware
+
+Run the packaging script from an initialized ESP-IDF PowerShell terminal:
+
+```powershell
+.\build-firmware.ps1
+```
+
+It performs a normal incremental `idf.py build`, then copies every binary listed
+by ESP-IDF's `flasher_args.json` into `output/m5stack_tab5`. The package also
+contains a padded 16 MB `firmware-complete.bin` suitable for a single-file burner
+at offset `0x0`, its flash metadata, `sdkconfig`, dependency lock file,
+ready-to-edit flash commands, and a generated `README.md` recording the Git commit
+and dirty state, component versions, ESP-IDF/toolchain versions, flash offsets,
+sizes, and SHA-256 hashes.
+
+Alternative build and output directories can be selected explicitly:
+
+```powershell
+.\build-firmware.ps1 -BuildDirectory build-release -OutputDirectory output/m5stack_tab5-release
+```
+
+`-PackageOnly` repackages an already successful build without invoking `idf.py`;
+it fails if the selected build directory has no complete ESP-IDF metadata.
+
+The `Build M5Stack TAB5 firmware` GitHub Actions workflow runs the same script
+for every pull request, every push to `main` (including merged pull requests),
+and manual `workflow_dispatch` runs. A successful job uploads the complete
+`output/m5stack_tab5` directory as a downloadable artifact for 14 days.
+
 ## Target hardware (wish list)
 
 - ESP32-P4
