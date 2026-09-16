@@ -2,5 +2,5 @@
 nvs,             data, nvs,      ,      0x6000,
 phy_init,        data, phy,      ,      0x1000,
 model,           data, littlefs, ,      600K,
-factory,         app,  factory,  ,      7M,
-littlefs_data,   data, littlefs, ,      8M,
+factory,         app,  factory,  ,      0x720000,
+littlefs_data,   data, littlefs, ,      0x7E0000,

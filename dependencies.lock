@@ -1001,12 +1001,12 @@ dependencies:
       type: service
     version: 1.22.3
   lvgl/lvgl:
-    component_hash: 17e68bfd21f0edf4c3ee838e2273da840bf3930e5dbc3bfa6c1190c3aed41f9f
+    component_hash: 184e532558c1c45fefed631f3e235423d22582aafb4630f3e8885c35281a49ae
     dependencies: []
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 9.4.0
+    version: 9.5.0
 direct_dependencies:
 - espressif/brookesia_app_settings
 - espressif/brookesia_gui_lvgl
@@ -1029,6 +1029,6 @@ direct_dependencies:
 - idf
 - joltwallet/littlefs
 - lvgl/lvgl
-manifest_hash: cf54428ab613584f39d99cefb1074fe75a864e7c8b074bbcf65115264fea60dc
+manifest_hash: 116ee06a325248f04a88e88871d9f95c484609a8f36b30cbd9a95bb2f4c821b6
 target: esp32p4
 version: 3.0.0

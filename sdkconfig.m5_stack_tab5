@@ -1,6 +1,17 @@
 # M5Stack Tab5: 16 MB flash and 32 MB in-package PSRAM.
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 
+# Optimise the native firmware for runtime performance. Enable LVGL's ESP32-P4
+# PPA draw unit for accelerated fills, blends and supported image operations.
+# These ESP-IDF settings do not affect the WASM build.
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_LV_USE_PPA=y
+CONFIG_LV_USE_PPA_IMG=y
+CONFIG_LV_DRAW_BUF_ALIGN=64
+CONFIG_LV_ATTRIBUTE_MEM_ALIGN_SIZE=64
+# CONFIG_LV_BUILD_EXAMPLES is not set
+# CONFIG_LV_BUILD_DEMOS is not set
+
 # Brookesia application and resource partitions for the 16 MB flash.
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_16m.csv"
