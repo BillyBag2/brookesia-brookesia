@@ -1,0 +1,73 @@
+{
+  "cSpell.language": "en-GB,en-US",
+  "cSpell.words": [
+    "bmgr",
+    "Brookesia",
+    "espressif",
+    "Iface",
+    "Kconfig",
+    "littlefs",
+    "LVGL",
+    "Mainboard",
+    "malloc",
+    "Mbps",
+    "menuconfig",
+    "MIPI",
+    "optocoupler",
+    "Pinout",
+    "pinouts",
+    "PSRAM",
+    "PYTHONUTF8",
+    "reflashed",
+    "SDIO",
+    "sdkconfig",
+    "supercapacitor",
+    "UART",
+    "Waveshare",
+    "xiaozhi"
+  ],
+  "idf.currentSetup": "C:\\esp\\v6.1\\esp-idf",
+  "idf.openOcdConfigs": [
+    "board/esp32p4-builtin.cfg"
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32p4"
+  },
+  "clangd.path": "C:\\Espressif\\tools\\esp-clangd\\esp-21.1.3_20260408\\esp-clangd\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=c:\\repos\\brookesia-brookesia\\build"
+  ],
+  "idf.flashType": "UART",
+  "idf.portWin": "COM3",
+  "peacock.color": "#2b165a",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#3f2083",
+    "activityBar.activeBorder": "#e7e7e7",
+    "activityBar.background": "#3f2083",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#b3562c",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "activityBarTop.activeBackground": "#3f2083",
+    "activityBarTop.activeBorder": "#e7e7e7",
+    "activityBarTop.background": "#3f2083",
+    "activityBarTop.foreground": "#e7e7e7",
+    "activityBarTop.inactiveForeground": "#e7e7e799",
+    "commandCenter.border": "#e7e7e799",
+    "commandCenter.foreground": "#e7e7e7",
+    "sash.hoverBorder": "#3f2083",
+    "statusBar.background": "#2b165a",
+    "statusBar.debuggingBackground": "#2b165a",
+    "statusBar.debuggingForeground": "#e7e7e7",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#3f2083",
+    "statusBarItem.remoteBackground": "#9a4926",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#2b165a",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#2b165a99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  }
+}

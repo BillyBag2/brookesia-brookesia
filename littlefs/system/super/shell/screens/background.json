@@ -1,0 +1,15 @@
+{
+    "type": "viewScreen",
+    "id": "background",
+    "commonProps": {
+        "scrollable": false,
+        "clickable": false
+    },
+    "style": {
+        "padding": 0,
+        "bgColor": "#e8f5d0"
+    },
+    "styleRefs": [
+        "shell.desktop"
+    ]
+}

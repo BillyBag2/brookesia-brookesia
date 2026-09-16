@@ -1,0 +1,46 @@
+# ESP-IDF 6.1: support ESP32-P4 silicon revisions 1.0 through 1.99.
+# The maximum is derived by IDF; pre-3.0 and 3.x support are mutually exclusive.
+CONFIG_IDF_TARGET="esp32p4"
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+CONFIG_ESP32P4_REV_MIN_100=y
+
+# Pre-3.0 silicon uses the 360 MHz CPU clock; 400 MHz fails in esp_clk_init.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_360=y
+
+# Let general-purpose malloc() allocations use PSRAM instead of preferring
+# scarce internal RAM for every allocation below 16 KiB. This matches the
+# Brookesia ESP32-P4 test configuration and preserves RAM for FreeRTOS stacks.
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=0
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+CONFIG_SPIRAM_ALLOW_NOINIT_SEG_EXTERNAL_MEMORY=y
+
+# Work around an ESP-IDF 6.1 sleep-retention assertion during startup on
+# pre-3.0 ESP32-P4 silicon. Runtime power management is not enabled.
+# CONFIG_PM_SLEEP_CLK_ICG_ENABLE is not set
+CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_STORAGE_DEVICE=y
+CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_ENABLE_FILE_SYSTEM_IMPL=y
+CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_FILE_SYSTEM_ENABLE_LITTLEFS=y
+CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_FILE_SYSTEM_LITTLEFS_BASE_PATH="/littlefs"
+CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_FILE_SYSTEM_LITTLEFS_PARTITION_LABEL="littlefs_data"
+# CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_FILE_SYSTEM_LITTLEFS_FORMAT_IF_MOUNT_FAILED is not set
+CONFIG_BROOKESIA_HAL_ADAPTOR_STORAGE_ENABLE_KEY_VALUE_IMPL=y
+CONFIG_NVS_ALLOCATE_CACHE_IN_SPIRAM=y
+CONFIG_BROOKESIA_HAL_ADAPTOR_ENABLE_SYSTEM_DEVICE=y
+CONFIG_BROOKESIA_HAL_ADAPTOR_SYSTEM_ENABLE_BOARD_INFO_IMPL=y
+
+# Settings loads a large GUI document on System Core workers. Keep their
+# stacks in PSRAM and provide enough headroom for JSON parsing and fonts.
+CONFIG_BROOKESIA_SYSTEM_CORE_WORKER_STACK_SIZE=131072
+CONFIG_BROOKESIA_SYSTEM_CORE_WORKER_STACK_IN_EXT=y
+CONFIG_ESP_LVGL_ADAPTER_ENABLE_DECODER=y
+CONFIG_ESP_LVGL_ADAPTER_ENABLE_FREETYPE=y
+CONFIG_ESP_TASK_WDT_EN=y
+
+# The fixed 64 KiB LVGL pool is too small for the Tab5 shell and Settings UI.
+# Use the ESP-IDF heap so LVGL can allocate from the board's PSRAM.
+CONFIG_LV_USE_CLIB_MALLOC=y
+
+# Render the TTF assets stored in LittleFS instead of falling back to the
+# built-in Montserrat fonts.
+CONFIG_LV_USE_FREETYPE=y

@@ -1,0 +1,62 @@
+name: Build M5Stack TAB5 firmware
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m5stack-tab5-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ESP-IDF v6.1 / ESP32-P4
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install ESP-IDF v6.1
+        uses: espressif/install-esp-idf-action@v1
+        with:
+          version: v6.1
+
+      - name: Generate M5Stack TAB5 Board Manager configuration
+        shell: pwsh
+        run: |
+          # A fresh checkout has no generated Board Manager component. The
+          # initial configure downloads its generator, but may fail while
+          # component requirements are evaluated without the generated files.
+          idf.py reconfigure
+          $configureExitCode = $LASTEXITCODE
+
+          $generator = "managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py"
+          if (-not (Test-Path -LiteralPath $generator -PathType Leaf)) {
+            throw "Initial ESP-IDF configure exited with code $configureExitCode and did not download $generator."
+          }
+
+          $env:PYTHONUTF8 = "1"
+          python $generator -b m5stack_tab5
+          if ($LASTEXITCODE -ne 0) {
+            throw "Board Manager configuration generation failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Build and package M5Stack TAB5 firmware
+        shell: pwsh
+        run: ./build-firmware.ps1 -BuildDirectory build -OutputDirectory output/m5stack_tab5
+
+      - name: Upload M5Stack TAB5 firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: m5stack-tab5-firmware-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+          path: output/m5stack_tab5
+          if-no-files-found: error
+          retention-days: 14

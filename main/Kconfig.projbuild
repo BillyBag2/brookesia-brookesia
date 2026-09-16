@@ -1,0 +1,11 @@
+menu "Application diagnostics"
+
+    config APP_TOUCH_DEBUG_OVERLAY
+        bool "Show touch points and coordinates"
+        default n
+        help
+            Draw a marker and the processed LVGL coordinates while the display
+            is touched. This is intended for diagnosing touch alignment and
+            hit-target problems.
+
+endmenu
