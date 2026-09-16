@@ -1,5 +1,45 @@
 # ESP-IDF commands
 
+## Repository role and boundaries
+
+This directory is the `brookesia-brookesia` ESP-IDF firmware submodule of the
+parent `brookesia-brookesia-wasm` repository. Keep commits separated by
+repository: commit firmware, board-profile, application, and resource-override
+changes here first, then commit the updated submodule pointer in the parent.
+Do not stage or commit generated parent build output while working here.
+
+The parent Emscripten build does not compile this project's
+`managed_components/` tree. It assembles pinned Brookesia sources under the
+parent's `.deps/assembled/` directory. It does, however, deliberately consume
+the following project-owned files directly from this submodule:
+
+- `boards/<board>/common/` for appearance settings shared by native and WASM;
+- `resource_overrides/` for sparse application and SuperOS resource changes;
+- selected portable application sources when they have an explicit host CMake
+  integration.
+
+Treat `.deps/`, `managed_components/`, `components/gen_bmgr_codes/`, `littlefs/`,
+and all `build/` directories according to their provenance. Do not copy fixes
+into generated dependency trees as the only source of a change.
+
+## Board-specific code
+
+The selected native board is controlled by `SDKCONFIG_DEFAULTS` in the root
+`CMakeLists.txt`; it currently defaults to `m5stack_tab5`. Keep board concerns
+in these layers:
+
+- `boards/<board>/common/include/brookesia/board/config.hpp`: portable appearance
+  values used by both native and WASM, such as density and font scale;
+- `boards/<board>/native/`: ESP-IDF-only hardware preparation;
+- `components/brookesia_board_target/`: resolves the generated Board Manager
+  target and exposes the selected common/native implementation;
+- `components/gen_bmgr_codes/`: generated Board Manager output, not the place
+  for hand-maintained policy.
+
+Do not move physical BSP properties already supplied by Board Manager into the
+portable appearance profile. The parent repository maintains its own
+`boards/<board>/wasm/` hardware description for browser-only behaviour.
+
 ## Read the connected chip revision
 
 Run these commands in an ESP-IDF PowerShell terminal. For this workspace's
@@ -77,7 +117,9 @@ Useful build notes:
 - The connected Tab5 contains an ESP32-P4 revision v1.0. ESP-SR 2.4.4 rejects
   pre-v3 ESP32-P4 builds under ESP-IDF 6.1, so do not enable the Brookesia AV/audio
   processor merely to obtain volume control. The current audio examples use the
-  ES8388/ES7210 codec interfaces directly while that incompatibility remains.
+  shared `AudioDecoder0`, `AudioEncoder0`, and `AudioPlayback` services. The local
+  `brookesia_service_audio` codec fallbacks adapt those services to the ES8388 and
+  ES7210 interfaces while the processor remains unavailable.
 
 For a faster rebuild, ccache can be kept inside this workspace:
 
@@ -86,6 +128,58 @@ $env:CCACHE_DIR = "$PWD\.ccache"
 $env:CCACHE_TEMPDIR = "$PWD\.ccache\tmp"
 idf.py build
 ```
+
+## Resources and registered applications
+
+`littlefs/` is a generated/staged native filesystem tree. A native configure or
+build may recreate files within it. Persistent project customizations belong in
+`resource_overrides/` at the same relative path they have under `littlefs/`.
+`cmake/resource_overrides.cmake` overlays that sparse tree after normal component
+resource staging in both the native build and the parent WASM build.
+
+When changing a managed application's JSON, image, or font:
+
+1. Put the authoritative changed file under `resource_overrides/`.
+2. Update the checked-in `littlefs/` copy when the repository intentionally
+   records the current staged native image.
+3. Rebuild before testing; editing an old file under a build directory is not
+   sufficient.
+4. Flash the LittleFS partition as well as the application when testing native
+   resources.
+
+Native application-owned packages live beside their component source and are
+staged with `brookesia_stage_runtime_app_package`. An app launcher icon needs all
+of the following:
+
+- `manifest.icon_id`, `manifest.icon_path`, and the correct `resource_dir`;
+- a package `res/images/index.json` containing the matching image id;
+- the referenced image file in that directory;
+- a staging rule for the package.
+
+The existing launcher icons are 92 x 92 RGB JPEG files. Preserve those dimensions
+unless the shell's launcher specification changes. A resource being present in
+LittleFS does not by itself make an app available in WASM: the parent build also
+needs to compile/register that app and include it in the selected board's
+`wasm/apps.cmake` allowlist.
+
+## Audio application architecture
+
+Applications should use Brookesia services rather than acquire ES8388, ES7210,
+I2S, or codec HAL objects directly. Current responsibilities are:
+
+- Music Player decodes its packaged MP3 and submits PCM through `AudioDecoder0`;
+- Spectrum Analyser consumes captured PCM published by `AudioEncoder0`;
+- volume and mute go through `AudioPlayback`;
+- `components/brookesia_service_audio/src/codec_fallback.cpp` bridges these
+  services to the native codec HAL while the optional AV processor is disabled.
+
+The browser build's current `brookesia_hal_wasm` audio device is only a mock: it
+discards playback PCM, generates silent capture PCM, and stores volume/mute state
+without using Web Audio. Do not describe a successful WASM build as proof of real
+speaker or microphone support. Real browser audio requires a Web Audio output
+bridge and `getUserMedia()` capture implementation below the same Brookesia HAL
+interfaces. Keep UI and signal-processing code portable so the native and WASM
+apps can ultimately share their application sources.
 
 ## WASM browser simulator
 
