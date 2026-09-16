@@ -29,6 +29,26 @@ jobs:
         with:
           version: v6.1
 
+      - name: Generate M5Stack TAB5 Board Manager configuration
+        shell: pwsh
+        run: |
+          # A fresh checkout has no generated Board Manager component. The
+          # initial configure downloads its generator, but may fail while
+          # component requirements are evaluated without the generated files.
+          idf.py reconfigure
+          $configureExitCode = $LASTEXITCODE
+
+          $generator = "managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py"
+          if (-not (Test-Path -LiteralPath $generator -PathType Leaf)) {
+            throw "Initial ESP-IDF configure exited with code $configureExitCode and did not download $generator."
+          }
+
+          $env:PYTHONUTF8 = "1"
+          python $generator -b m5stack_tab5
+          if ($LASTEXITCODE -ne 0) {
+            throw "Board Manager configuration generation failed with exit code $LASTEXITCODE."
+          }
+
       - name: Build and package M5Stack TAB5 firmware
         shell: pwsh
         run: ./build-firmware.ps1 -BuildDirectory build -OutputDirectory output/m5stack_tab5
