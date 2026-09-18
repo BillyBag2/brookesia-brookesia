@@ -241,7 +241,8 @@ Versions below were checked against the [ESP Component Registry](https://compone
 - [x] Microphone input from ES7210 codec through the shared `AudioEncoder0` service.
 - [x] Shared audio volume and mute control through the `AudioPlayback` service.
 - [ ] Camera input from SC2356.
-- [ ] Battery status and charging.
+- [x] Battery voltage, signed charge/discharge current, and fixed-curve percentage.
+- [x] Charging on/off and 0.5 A / 1 A charge-rate selection.
 - [ ] Motion sensor BMI270. (orientation, shake detection, others?)
 - [ ] Video playback.
 - [ ] M5 Stack Keyboard support.

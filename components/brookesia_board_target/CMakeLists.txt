@@ -33,7 +33,10 @@ idf_component_register(
         "${BROOKESIA_BOARD_ROOT}/common/include"
         "${BROOKESIA_BOARD_ROOT}/native/include"
     REQUIRES
+        esp_driver_i2c
         esp_board_manager
+        espressif__brookesia_hal_interface
+        espressif__esp_io_expander
 )
 
 message(STATUS "Brookesia native board target: ${BROOKESIA_BOARD_TARGET}")

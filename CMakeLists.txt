@@ -19,7 +19,7 @@ list(APPEND SDKCONFIG_DEFAULTS
 )
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(sample_project)
+project(Brookesia-Brookesia)
 
 # Package Brookesia's staged UI resources into the runtime filesystem and
 # include that image in the normal `idf.py flash` command.

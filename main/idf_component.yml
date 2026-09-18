@@ -11,6 +11,12 @@ dependencies:
     version: "9.5.0"
   espressif/brookesia_hal_adaptor:
     version: "0.8.*"
+  espressif/brookesia_hal_interface:
+    version: "0.8.*"
+    override_path: "../../thirdparty/esp-brookesia/hal/brookesia_hal_interface"
+  espressif/brookesia_lib_utils:
+    version: "0.8.*"
+    override_path: "../../thirdparty/esp-brookesia/utils/brookesia_lib_utils"
   espressif/brookesia_service_device:
     version: "0.8.*"
   # Speaker/microphone playback and capture services used by the audio demos.

@@ -160,33 +160,28 @@ dependencies:
       type: service
     version: 0.8.4
   espressif/brookesia_hal_interface:
-    component_hash: aef0a1f2346c1aa7d8b9675042801bd54664f9f9ffb9c0cfe4e7500aa07d0b53
     dependencies:
     - name: espressif/brookesia_lib_utils
-      registry_url: https://components.espressif.com
-      require: private
+      override_path: ../../utils/brookesia_lib_utils
+      require: public
       version: 0.8.*
     source:
-      registry_url: https://components.espressif.com
-      type: service
+      path: ../thirdparty/esp-brookesia/hal/brookesia_hal_interface
+      type: local
     version: 0.8.2
   espressif/brookesia_lib_utils:
-    component_hash: d68f7e6dcb2f40d4d69f875c2c5e0051b5d8cf3971cdbe35369f2f3f2098311d
     dependencies:
+    - name: idf
+      version: '>=6.0,<=6.2'
     - name: espressif/cmake_utilities
-      registry_url: https://components.espressif.com
-      require: private
+      require: public
       version: 0.*
     - name: espressif/esp-boost
-      registry_url: https://components.espressif.com
-      require: private
+      require: public
       version: 0.6.*
-    - name: idf
-      require: private
-      version: '>=6.0,<=6.2'
     source:
-      registry_url: https://components.espressif.com
-      type: service
+      path: ../thirdparty/esp-brookesia/utils/brookesia_lib_utils
+      type: local
     version: 0.8.2
   espressif/brookesia_runtime_manager:
     component_hash: c98f5275d666e62dc8384a164b240ec2497885aacf3c2d9d81cb4282433008d8
@@ -410,7 +405,7 @@ dependencies:
       require: private
       version: '>=5.5'
     source:
-      registry_url: https://components.espressif.com
+      registry_url: https://components.espressif.com/
       type: service
     version: 0.6.0
   espressif/esp_audio_codec:
@@ -1011,6 +1006,8 @@ direct_dependencies:
 - espressif/brookesia_app_settings
 - espressif/brookesia_gui_lvgl
 - espressif/brookesia_hal_adaptor
+- espressif/brookesia_hal_interface
+- espressif/brookesia_lib_utils
 - espressif/brookesia_service_audio
 - espressif/brookesia_service_device
 - espressif/brookesia_service_helper
@@ -1029,6 +1026,6 @@ direct_dependencies:
 - idf
 - joltwallet/littlefs
 - lvgl/lvgl
-manifest_hash: 116ee06a325248f04a88e88871d9f95c484609a8f36b30cbd9a95bb2f4c821b6
+manifest_hash: 9c29078112bbb43f019b7d893404a8dcb78f00d2026dcac7ef68afced704f855
 target: esp32p4
 version: 3.0.0
