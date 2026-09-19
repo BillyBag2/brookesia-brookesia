@@ -21,6 +21,22 @@ Image: M5Stack, [original pin map](https://m5stack-doc.oss-cn-shenzhen.aliyuncs.
 - [Tab5 schematics (PDF)](https://m5stack-doc.oss-cn-shenzhen.aliyuncs.com/1132/Tab5_Schematics_PDF.pdf)
 - [Overall design block diagram (PDF)](https://m5stack-doc.oss-cn-shenzhen.aliyuncs.com/1132/Tab5_Overall_Design_Block_Diagram.pdf)
 
+## Battery management
+
+The native board target publishes the TAB5 battery through ESP-Brookesia's
+`BatteryIface`. It reads the two-cell pack voltage and signed current from the
+INA226 monitor and uses the second GPIO expander for charger status and control.
+Positive current means the pack is charging; negative current means it is
+discharging.
+
+Supported controls are charging on/off and the hardware's 0.5 A or 1 A charging
+rate. The reported percentage is linearly interpolated from a fixed 6.0-8.4 V
+two-cell Li-ion voltage curve. It needs no learning or saved history, but it is an
+estimate: load, charging, temperature, cell ageing, and the pack protection and
+balancing circuit can all shift the voltage. Hardware behaviour and current
+polarity must be confirmed on a TAB5 battery kit before relying on the readings
+for protection or charging decisions.
+
 ## References
 
 - [M5Stack Tab5 documentation](https://docs.m5stack.com/en/core/Tab5) — specifications, power, hardware variants, pin map, and software links.

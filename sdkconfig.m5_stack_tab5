@@ -1,16 +1,48 @@
 # M5Stack Tab5: 16 MB flash and 32 MB in-package PSRAM.
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 
-# Optimise the native firmware for runtime performance. Enable LVGL's ESP32-P4
+# Optimise the native firmware for flash size while retaining LVGL's ESP32-P4
 # PPA draw unit for accelerated fills, blends and supported image operations.
 # These ESP-IDF settings do not affect the WASM build.
-CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 CONFIG_LV_USE_PPA=y
 CONFIG_LV_USE_PPA_IMG=y
 CONFIG_LV_DRAW_BUF_ALIGN=64
 CONFIG_LV_ATTRIBUTE_MEM_ALIGN_SIZE=64
 # CONFIG_LV_BUILD_EXAMPLES is not set
 # CONFIG_LV_BUILD_DEMOS is not set
+
+# Keep the LVGL widgets used by Brookesia's JSON GUI factory, but omit unrelated
+# stock widgets and the unused simple theme from the native firmware.
+# CONFIG_LV_USE_ANIMIMG is not set
+# CONFIG_LV_USE_ARCLABEL is not set
+# CONFIG_LV_USE_CALENDAR is not set
+# CONFIG_LV_USE_CHART is not set
+# CONFIG_LV_USE_IMAGEBUTTON is not set
+# CONFIG_LV_USE_LED is not set
+# CONFIG_LV_USE_LIST is not set
+# CONFIG_LV_USE_MENU is not set
+# CONFIG_LV_USE_MSGBOX is not set
+# CONFIG_LV_USE_ROLLER is not set
+# CONFIG_LV_USE_SCALE is not set
+# CONFIG_LV_USE_SPAN is not set
+# CONFIG_LV_USE_SPINBOX is not set
+# CONFIG_LV_USE_TABVIEW is not set
+# CONFIG_LV_USE_TILEVIEW is not set
+# CONFIG_LV_USE_WIN is not set
+# CONFIG_LV_USE_THEME_SIMPLE is not set
+
+# The UI uses ordinary TTF/OTF fonts and does not need FreeType's legacy font
+# drivers or compressed-stream helpers.
+CONFIG_ESP_LVGL_ADAPTER_FREETYPE_MINIMAL_BUILD=y
+
+# Release logging: retain warnings and errors without embedding source/function
+# strings in every Brookesia log site.
+CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+CONFIG_BROOKESIA_UTILS_LOG_LEVEL_WARNING=y
+# CONFIG_BROOKESIA_UTILS_LOG_ENABLE_FILE_AND_LINE is not set
+# CONFIG_BROOKESIA_UTILS_LOG_ENABLE_FUNCTION_NAME is not set
 
 # Brookesia application and resource partitions for the 16 MB flash.
 CONFIG_PARTITION_TABLE_CUSTOM=y
