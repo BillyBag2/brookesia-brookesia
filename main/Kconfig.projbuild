@@ -9,3 +9,11 @@ menu "Application diagnostics"
             hit-target problems.
 
 endmenu
+
+# esp_h264 registry metadata references this selector when resolving the
+# esp_video dependency, but esp_h264 1.3.8 no longer declares it. Keep the
+# default path (the registry component) and provide the missing selector so
+# ESP-IDF 6.1 can validate the dependency graph.
+config ESP_VIDEO_USE_CUSTOMIZED_ESP_H264_VERSION
+    bool
+    default n

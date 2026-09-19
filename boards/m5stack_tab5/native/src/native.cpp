@@ -109,19 +109,10 @@ public:
 
     bool get_charge_config(ChargeConfig &config) override
     {
-        uint32_t pins = 0;
-        if (esp_io_expander_get_level(
-                expander_, CHARGE_ENABLE_PIN | QUICK_CHARGE_PIN, &pins
-            ) != ESP_OK) {
-            return false;
-        }
-        config = {
-            .enabled = (pins & CHARGE_ENABLE_PIN) != 0,
-            .target_voltage_mv = 8400,
-            .charge_current_ma = (pins & QUICK_CHARGE_PIN) ? 500U : 1000U,
-            .precharge_current_ma = 0,
-            .termination_current_ma = 0,
-        };
+        // esp_io_expander_get_level() reads the input register. That is not a
+        // reliable read-back for these output pins, so retain the last output
+        // configuration accepted by this backend instead.
+        config = charge_config_;
         return true;
     }
 
@@ -138,12 +129,17 @@ public:
             ) != ESP_OK) {
             return false;
         }
+        charge_config_.charge_current_ma = config.charge_current_ma;
         return set_charging_enabled(config.enabled);
     }
 
     bool set_charging_enabled(bool enabled) override
     {
-        return esp_io_expander_set_level(expander_, CHARGE_ENABLE_PIN, enabled ? 1 : 0) == ESP_OK;
+        if (esp_io_expander_set_level(expander_, CHARGE_ENABLE_PIN, enabled ? 1 : 0) != ESP_OK) {
+            return false;
+        }
+        charge_config_.enabled = enabled;
+        return true;
     }
 
 private:
@@ -159,6 +155,15 @@ private:
 
     i2c_master_dev_handle_t monitor_ = nullptr;
     esp_io_expander_handle_t expander_ = nullptr;
+    // Board Manager initializes P7 low (charging disabled) and P5 low
+    // (the active-low 1 A selection).
+    ChargeConfig charge_config_ = {
+        .enabled = false,
+        .target_voltage_mv = 8400,
+        .charge_current_ma = 1000,
+        .precharge_current_ma = 0,
+        .termination_current_ma = 0,
+    };
 };
 
 class Tab5PowerDevice final : public hal::Device {
