@@ -6,11 +6,12 @@ An attempt to create ESP-Brookesia, for a number of boards that I have.
 
 ## Building the project for the first time
 
-On a fresh checkout, first let ESP-IDF download `managed_components`. This
-initial command may finish with a Kconfig error; that is expected during the
-bootstrap pass:
+On a fresh checkout, fetch the two unreleased ESP-Brookesia components, then
+let ESP-IDF download `managed_components`. The initial configure may finish
+with a Kconfig error; that is expected during the bootstrap pass:
 
 ```powershell
+.\fetch-components.ps1
 idf.py reconfigure
 ```
 
@@ -30,6 +31,13 @@ metadata references but `espressif/esp_video` 2.4.1 does not declare. The
 symbol was added to later `esp_video` sources. The patch is idempotent and is
 also run automatically by `build-firmware.ps1`.
 
+`fetch-components.ps1` creates a filtered sparse checkout under
+`.deps/esp-brookesia`. It fetches only `brookesia_hal_interface` and
+`brookesia_lib_utils` from the fork and verifies the exact commit recorded in
+`component-sources.json`. The directory is generated and ignored by Git. To
+adopt a newer fork revision, update the 40-character commit in that manifest,
+run the fetch script, test a clean build, and commit the manifest change.
+
 ## Build and package firmware
 
 Run the packaging script from an initialized ESP-IDF PowerShell terminal:
@@ -38,8 +46,9 @@ Run the packaging script from an initialized ESP-IDF PowerShell terminal:
 .\build-firmware.ps1
 ```
 
-It performs a normal incremental `idf.py build`, then copies every binary listed
-by ESP-IDF's `flasher_args.json` into `output/m5stack_tab5`. The package also
+It fetches the pinned unreleased components, bootstraps managed components when
+needed, performs a normal incremental `idf.py build`, then copies every binary
+listed by ESP-IDF's `flasher_args.json` into `output/m5stack_tab5`. The package also
 contains a padded 16 MB `firmware-complete.bin` suitable for a single-file burner
 at offset `0x0`, its flash metadata, `sdkconfig`, dependency lock file,
 ready-to-edit flash commands, and a generated `README.md` recording the Git commit
@@ -89,6 +98,7 @@ For TAB5, run an initial `idf.py reconfigure` to download the managed
 components, then generate its display and audio board configuration with:
 
 ```powershell
+.\fetch-components.ps1
 idf.py bmgr -b m5stack_tab5
 ```
 
@@ -99,6 +109,7 @@ generator directly from the repository root in the ESP-IDF terminal:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
+.\fetch-components.ps1
 python .\managed_components\espressif__esp_board_manager\gen_bmgr_config_codes.py -b m5stack_tab5
 .\patch-managed-components.ps1
 idf.py reconfigure

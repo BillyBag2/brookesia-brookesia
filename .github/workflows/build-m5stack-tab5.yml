@@ -32,6 +32,8 @@ jobs:
       - name: Bootstrap managed components and Board Manager configuration
         shell: pwsh
         run: |
+          ./fetch-components.ps1
+
           # A clean checkout has no managed components. This first configure
           # downloads them and is allowed to fail because esp_video 2.4.1 is
           # missing a Kconfig symbol referenced by registry metadata.
