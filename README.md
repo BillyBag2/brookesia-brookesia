@@ -6,13 +6,29 @@ An attempt to create ESP-Brookesia, for a number of boards that I have.
 
 ## Building the project for the first time
 
-If the project fails to configure for the first time in an IDF terminal use...
+On a fresh checkout, first let ESP-IDF download `managed_components`. This
+initial command may finish with a Kconfig error; that is expected during the
+bootstrap pass:
+
+```powershell
+idf.py reconfigure
+```
+
+Once `managed_components` exists, generate the board files, apply the managed
+component compatibility patch, and configure again:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
-python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+python .\managed_components\espressif__esp_board_manager\gen_bmgr_config_codes.py -b m5stack_tab5
+.\patch-managed-components.ps1
 idf.py reconfigure
+idf.py build
 ```
+
+The patch step supplies a compatibility Kconfig symbol that current registry
+metadata references but `espressif/esp_video` 2.4.1 does not declare. The
+symbol was added to later `esp_video` sources. The patch is idempotent and is
+also run automatically by `build-firmware.ps1`.
 
 ## Build and package firmware
 
@@ -83,7 +99,9 @@ generator directly from the repository root in the ESP-IDF terminal:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
-python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+python .\managed_components\espressif__esp_board_manager\gen_bmgr_config_codes.py -b m5stack_tab5
+.\patch-managed-components.ps1
+idf.py reconfigure
 idf.py build
 ```
 
@@ -91,8 +109,8 @@ This restores `components/gen_bmgr_codes`, including the codec capabilities
 needed to resolve the audio Kconfig conditions. Keep the audio processor
 disabled in `sdkconfig.m5_stack_tab5`; enabling it is not a fix for this warning.
 
-Run `idf.py reconfigure` again after generation. The root `CMakeLists.txt`
-remains the source of truth for the selected project target.
+The root `CMakeLists.txt` remains the source of truth for the selected project
+target.
 
 The shared P4 file selects silicon revisions **1.0-1.99** in ESP-IDF 6.1.
 Revision 3.x requires a separate configuration. All board files enable 200 MHz

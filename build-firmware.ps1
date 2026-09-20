@@ -72,6 +72,7 @@ if (-not $PackageOnly) {
 
     Push-Location $ProjectRoot
     try {
+        & (Join-Path $ProjectRoot "patch-managed-components.ps1")
         & idf.py -B $BuildRoot build
         if ($LASTEXITCODE -ne 0) {
             throw "ESP-IDF build failed with exit code $LASTEXITCODE."
