@@ -61,9 +61,21 @@ else {
 Invoke-Git @("-C", $checkoutPath, "sparse-checkout", "init", "--cone")
 Invoke-Git (@("-C", $checkoutPath, "sparse-checkout", "set") + $sparsePaths)
 $currentCommit = (& git -C $checkoutPath rev-parse HEAD 2>$null).Trim()
+$hasSparseFiles = $true
+foreach ($relativePath in $sparsePaths) {
+    if (-not (Test-Path -LiteralPath (Join-Path $checkoutPath $relativePath) -PathType Container)) {
+        $hasSparseFiles = $false
+        break
+    }
+}
 if ($LASTEXITCODE -ne 0 -or $currentCommit -ne $commit) {
     Invoke-Git @("-C", $checkoutPath, "fetch", "--depth", "1", "origin", $commit)
     Invoke-Git @("-C", $checkoutPath, "checkout", "--detach", "FETCH_HEAD")
+}
+elseif (-not $hasSparseFiles) {
+    # A clone made with --no-checkout has a valid HEAD but an empty index and
+    # working tree. Materialize the selected paths without another fetch.
+    Invoke-Git @("-C", $checkoutPath, "checkout", "--detach", "--force", $commit)
 }
 
 $resolvedCommit = (& git -C $checkoutPath rev-parse HEAD).Trim()
