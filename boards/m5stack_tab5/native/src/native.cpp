@@ -12,6 +12,7 @@
 #include "driver/i2c_master.h"
 #include "esp_board_manager.h"
 #include "esp_board_periph.h"
+#include "esp_log.h"
 #include "esp_io_expander.h"
 
 namespace esp_brookesia::board {
@@ -25,6 +26,10 @@ constexpr uint32_t CHARGE_ENABLE_PIN = 1U << 7;
 constexpr uint32_t CHARGE_STATUS_PIN = 1U << 6;
 constexpr uint32_t QUICK_CHARGE_PIN = 1U << 5;
 constexpr uint32_t I2C_TIMEOUT_MS = 100;
+constexpr char TAG[] = "TAB5_BOARD";
+
+// Keep the board battery initialized before services query HAL capabilities.
+hal::InterfaceHandle<hal::power::BatteryIface> battery_interface;
 
 // Open-circuit voltage curve for a conventional two-cell Li-ion pack. Runtime
 // load and charging introduce some error, but this needs no learned state.
@@ -189,6 +194,7 @@ public:
     {
         void *bus = nullptr;
         if (esp_board_periph_ref_handle(I2C_PERIPHERAL_NAME, &bus) != ESP_OK || bus == nullptr) {
+            ESP_LOGE(TAG, "Failed to acquire I2C peripheral for battery monitor");
             return false;
         }
         bus_referenced_ = true;
@@ -196,6 +202,7 @@ public:
         auto *expander_handle = static_cast<esp_io_expander_handle_t *>(nullptr);
         if (esp_board_device_get_handle(POWER_EXPANDER_NAME, reinterpret_cast<void **>(&expander_handle)) != ESP_OK ||
                 expander_handle == nullptr || *expander_handle == nullptr) {
+            ESP_LOGE(TAG, "Failed to acquire battery-control I/O expander");
             on_deinit();
             return false;
         }
@@ -204,6 +211,7 @@ public:
         // The current TAB5 BSP snapshot configures P6 as an output. CHG_STAT is
         // a charger status input, so correct its direction before sampling it.
         if (esp_io_expander_set_dir(expander_, CHARGE_STATUS_PIN, IO_EXPANDER_INPUT) != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to configure charger-status input");
             on_deinit();
             return false;
         }
@@ -216,11 +224,13 @@ public:
             .flags = {},
         };
         if (i2c_master_bus_add_device(static_cast<i2c_master_bus_handle_t>(bus), &config, &monitor_) != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to attach INA226 battery monitor at I2C address 0x%02x", INA226_ADDRESS);
             on_deinit();
             return false;
         }
 
         interfaces_.emplace(Tab5Battery::NAME, std::make_shared<Tab5Battery>(monitor_, expander_));
+        ESP_LOGI(TAG, "TAB5 battery interface initialized");
         return true;
     }
 
@@ -244,7 +254,12 @@ private:
     bool bus_referenced_ = false;
 };
 
-BROOKESIA_PLUGIN_REGISTER(hal::Device, Tab5PowerDevice, std::string(Tab5PowerDevice::NAME));
+BROOKESIA_PLUGIN_REGISTER_WITH_SYMBOL(
+    hal::Device,
+    Tab5PowerDevice,
+    std::string(Tab5PowerDevice::NAME),
+    brookesia_m5stack_tab5_power_device_plugin
+);
 
 } // namespace
 
@@ -252,7 +267,19 @@ bool prepare_native_hardware()
 {
     // The second Tab5 I/O expander drives WLAN_PWR_EN on P0. It is otherwise
     // unused by the active services, so Board Manager will not initialize it.
-    return esp_board_manager_init_device_by_name("gpio_expander_2") == ESP_OK;
+    if (esp_board_manager_init_device_by_name(POWER_EXPANDER_NAME) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize battery-control I/O expander");
+        return false;
+    }
+
+    battery_interface = hal::acquire_first_interface<hal::power::BatteryIface>();
+    if (!battery_interface) {
+        ESP_LOGE(TAG, "Failed to acquire TAB5 battery interface");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "TAB5 battery hardware ready");
+    return true;
 }
 
 } // namespace esp_brookesia::board

@@ -19,6 +19,14 @@ dependencies:
     override_path: "../.deps/esp-brookesia/utils/brookesia_lib_utils"
   espressif/brookesia_service_device:
     version: "0.8.*"
+  # Device 0.8.2 implements the nine-function schema from Helper 0.8.4.
+  # Helper 0.8.5 adds expansion-module functions which Device does not yet
+  # implement, causing service registration to fail at runtime.
+  espressif/brookesia_service_helper:
+    version: "0.8.4"
+  # USB 0.8.1 requires Helper >=0.8.5, so keep the compatible USB release too.
+  espressif/brookesia_service_usb:
+    version: "0.8.0"
   # Speaker/microphone playback and capture services used by the audio demos.
   espressif/brookesia_service_audio:
     version: "0.8.*"

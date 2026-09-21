@@ -27,9 +27,28 @@ idf.py build
 ```
 
 The patch step supplies a compatibility Kconfig symbol that current registry
-metadata references but `espressif/esp_video` 2.4.1 does not declare. The
-symbol was added to later `esp_video` sources. The patch is idempotent and is
-also run automatically by `build-firmware.ps1`.
+metadata references but `espressif/esp_video` 2.4.1 does not declare. It also
+adds a short startup delay and retry loop to the Board Manager I2C touch probe;
+the TAB5 touch controller may not acknowledge immediately after its power rail
+is enabled. Both patches are idempotent and are also run automatically by
+`build-firmware.ps1`. CMake reapplies them after ESP-IDF resolves managed
+components, since `idf.py reconfigure` can replace patched managed sources.
+
+The same patch step applies the battery-specific Settings and SuperOS code from
+forked ESP-Brookesia commit `863b3ff138b06b1bdf42852b91a5ed081311a8f8`.
+The checked-in patches are
+`patches/brookesia/settings-battery.patch` and
+`patches/brookesia/superos-battery.patch`. They target the published 0.8.3
+components and deliberately exclude the fork's newer expansion-service code,
+which requires a different Device/Helper pairing. CMake reapplies these
+patches after managed-component refreshes; if a future registry version no
+longer matches, configuration fails rather than silently dropping battery UI.
+
+The native manifest pins `brookesia_service_helper` 0.8.4 and
+`brookesia_service_usb` 0.8.0 alongside `brookesia_service_device` 0.8.2.
+Helper 0.8.5 exposes an additional expansion-module function that the latest
+published Device service does not yet implement; mixing those releases causes
+Device service registration to fail during startup.
 
 `fetch-components.ps1` creates a filtered sparse checkout under
 `.deps/esp-brookesia`. It fetches only `brookesia_hal_interface` and

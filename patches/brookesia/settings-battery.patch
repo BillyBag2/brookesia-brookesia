@@ -1,0 +1,434 @@
+diff --git a/managed_components/espressif__brookesia_app_settings/include/brookesia/app_settings/settings_app.hpp b/managed_components/espressif__brookesia_app_settings/include/brookesia/app_settings/settings_app.hpp
+index 6d62e2f..326807a 100644
+--- a/managed_components/espressif__brookesia_app_settings/include/brookesia/app_settings/settings_app.hpp
++++ b/managed_components/espressif__brookesia_app_settings/include/brookesia/app_settings/settings_app.hpp
+@@ -16,6 +16,7 @@
+ #include "boost/json/array.hpp"
+ #include "brookesia/app_settings/macro_configs.h"
+ #include "brookesia/lib_utils/signal.hpp"
++#include "brookesia/hal_interface/interfaces/power/battery.hpp"
+ 
+ #include "brookesia/service_manager/service/base.hpp"
+ #include "brookesia/system_core.hpp"
+@@ -64,6 +65,11 @@ private:
+         int brightness = 0;
+         int volume = 0;
+         bool muted = false;
++        bool battery_supported = false;
++        bool battery_charger_control_supported = false;
++        bool battery_charge_config_supported = false;
++        hal::power::BatteryIface::State battery_state;
++        hal::power::BatteryIface::ChargeConfig battery_charge_config;
+     };
+ 
+     struct WifiNetworkState {
+@@ -134,11 +140,14 @@ private:
+     void clear_hardware_groups(system::core::AppContext &context);
+     std::expected<void, std::string> refresh_display_state(system::core::AppContext &context);
+     std::expected<void, std::string> refresh_sound_state(system::core::AppContext &context);
++    std::expected<void, std::string> refresh_battery_state(system::core::AppContext &context);
+     void subscribe_device_events();
+     void disconnect_device_events();
+     void handle_brightness_event(const gui::Event &event);
+     void handle_volume_event(const gui::Event &event);
+     void handle_mute_event(const gui::Event &event);
++    void handle_battery_charging_event(const gui::Event &event);
++    void handle_battery_rate_event(const gui::Event &event);
+     void set_brightness(system::core::AppContext &context, int brightness);
+     void set_volume(system::core::AppContext &context, int volume);
+     void set_mute(system::core::AppContext &context, bool muted);
+diff --git a/managed_components/espressif__brookesia_app_settings/src/app/lifecycle.ipp b/managed_components/espressif__brookesia_app_settings/src/app/lifecycle.ipp
+index dd90da0..f701fe6 100644
+--- a/managed_components/espressif__brookesia_app_settings/src/app/lifecycle.ipp
++++ b/managed_components/espressif__brookesia_app_settings/src/app/lifecycle.ipp
+@@ -557,6 +557,11 @@ std::expected<void, std::string> SettingsApp::on_action(
+                 BROOKESIA_LOGW("Failed to refresh My Device page: %1%", device_result.error());
+             }
+         }
++        if (current_page_ == PAGE_BATTERY) {
++            if (auto battery_result = refresh_battery_state(context); !battery_result) {
++                BROOKESIA_LOGW("Failed to refresh Battery page: %1%", battery_result.error());
++            }
++        }
+         if (current_page_ == PAGE_LANGUAGE) {
+             if (auto language_result = populate_language_options(context); !language_result) {
+                 BROOKESIA_LOGW("Failed to populate Language page: %1%", language_result.error());
+@@ -675,6 +680,14 @@ std::expected<void, std::string> SettingsApp::subscribe_actions(system::core::Ap
+             handle_mute_event(event);
+         },
+     });
++    subscriptions.push_back({
++        .action = ACTION_BATTERY_CHARGING,
++        .handler = [this](const gui::Event &event) { handle_battery_charging_event(event); },
++    });
++    subscriptions.push_back({
++        .action = ACTION_BATTERY_RATE,
++        .handler = [this](const gui::Event &event) { handle_battery_rate_event(event); },
++    });
+     for (const auto *action : {
+                 ACTION_DEBUG_MEMORY_TOGGLE,
+                 ACTION_DEBUG_THREAD_TOGGLE,
+diff --git a/managed_components/espressif__brookesia_app_settings/src/private/settings_app_internal.hpp b/managed_components/espressif__brookesia_app_settings/src/private/settings_app_internal.hpp
+index 8d0b14e..04cfe0c 100644
+--- a/managed_components/espressif__brookesia_app_settings/src/private/settings_app_internal.hpp
++++ b/managed_components/espressif__brookesia_app_settings/src/private/settings_app_internal.hpp
+@@ -152,6 +152,7 @@ inline constexpr const char *THEME_LIGHT = "light";
+ inline constexpr const char *THEME_DARK = "dark";
+ inline constexpr const char *PAGE_HOME = "settings_home";
+ inline constexpr const char *PAGE_DEVICE = "my_device";
++inline constexpr const char *PAGE_BATTERY = "battery";
+ inline constexpr const char *PAGE_WIFI = "wifi";
+ inline constexpr const char *PAGE_WIFI_CONNECT = "wifi_connect";
+ inline constexpr const char *PAGE_SOUND = "sound";
+@@ -161,6 +162,8 @@ inline constexpr const char *PAGE_LANGUAGE = "language";
+ inline constexpr const char *PAGE_TIME_ZONE = "time_zone";
+ inline constexpr const char *PAGE_DEBUG = "debug";
+ inline constexpr const char *ACTION_OPEN_HOME = "settings.open.home";
++inline constexpr const char *ACTION_OPEN_BATTERY = "settings.open.battery";
++inline constexpr const char *ACTION_BACK_BATTERY = "settings.back.battery";
+ inline constexpr const char *ACTION_HEADER_BACK = "settings.header.back";
+ inline constexpr const char *ACTION_BACK_LANGUAGE = "settings.back.language";
+ inline constexpr const char *ACTION_OPEN_DEBUG = "settings.open.debug";
+@@ -174,6 +177,8 @@ inline constexpr const char *ACTION_WIFI_CONNECT_SUBMIT = "settings.wifi.connect
+ inline constexpr const char *ACTION_DISPLAY_BRIGHTNESS = "settings.display.brightness";
+ inline constexpr const char *ACTION_SOUND_VOLUME = "settings.sound.volume";
+ inline constexpr const char *ACTION_SOUND_MUTE = "settings.sound.mute";
++inline constexpr const char *ACTION_BATTERY_CHARGING = "settings.battery.charging";
++inline constexpr const char *ACTION_BATTERY_RATE = "settings.battery.rate";
+ inline constexpr const char *ACTION_DEBUG_MEMORY_TOGGLE = "settings.debug.memory.toggle";
+ inline constexpr const char *ACTION_DEBUG_THREAD_TOGGLE = "settings.debug.thread.toggle";
+ inline constexpr const char *ACTION_DEBUG_GUI_TOGGLE = "settings.debug.gui.toggle";
+@@ -229,6 +234,13 @@ inline constexpr const char *SOUND_VOLUME_SLIDER_PATH = "/sound/page/volume_card
+ inline constexpr const char *SOUND_MUTE_ROW_PATH = "/sound/page/silent_card/silent_mode";
+ inline constexpr const char *SOUND_MUTE_TOGGLE_PATH = "/sound/page/silent_card/silent_mode/toggle";
+ inline constexpr const char *HOME_SOUND_VALUE_PATH = "/settings_home/page/main_list/sound/value_box/value";
++inline constexpr const char *BATTERY_CARD_PATH = "/battery/page/battery_card";
++inline constexpr const char *BATTERY_LEVEL_PATH = "/battery/page/battery_card/level/value_box/value";
++inline constexpr const char *BATTERY_VOLTAGE_PATH = "/battery/page/battery_card/voltage/value_box/value";
++inline constexpr const char *BATTERY_CURRENT_PATH = "/battery/page/battery_card/current/value_box/value";
++inline constexpr const char *BATTERY_CHARGING_PATH = "/battery/page/battery_card/charging/toggle";
++inline constexpr const char *BATTERY_RATE_PATH = "/battery/page/battery_card/rate/value_box/value";
++inline constexpr const char *HOME_BATTERY_VALUE_PATH = "/settings_home/page/main_list/battery/value_box/value";
+ inline constexpr const char *DEBUG_MEMORY_SWITCH_PATH = "/debug/page/switch_card/memory_debug/toggle";
+ inline constexpr const char *DEBUG_THREAD_SWITCH_ROW_PATH = "/debug/page/switch_card/thread_debug";
+ inline constexpr const char *DEBUG_THREAD_SWITCH_PATH = "/debug/page/switch_card/thread_debug/toggle";
+@@ -309,9 +321,10 @@ inline constexpr const char *DEBUG_KEY_THREAD_STACK_HIGH_WATER_MARK_THRESHOLD_BY
+     "Debug.ThreadStackHighWaterMarkThresholdBytes";
+ inline constexpr uint32_t SETTINGS_STORAGE_TIMEOUT_MS = WIFI_SERVICE_TIMEOUT_MS;
+ 
+-inline constexpr std::array<const char *, 18> NAVIGATION_ACTIONS = {
++inline constexpr std::array<const char *, 20> NAVIGATION_ACTIONS = {
+     ACTION_OPEN_HOME,
+     "settings.back.device",
++    ACTION_BACK_BATTERY,
+     "settings.back.wifi",
+     ACTION_BACK_WIFI_CONNECT,
+     "settings.back.sound",
+@@ -320,6 +333,7 @@ inline constexpr std::array<const char *, 18> NAVIGATION_ACTIONS = {
+     "settings.back.time_zone",
+     ACTION_BACK_DEBUG,
+     "settings.open.device",
++    ACTION_OPEN_BATTERY,
+     "settings.open.wifi",
+     ACTION_OPEN_WIFI_CONNECT,
+     "settings.open.sound",
+diff --git a/managed_components/espressif__brookesia_app_settings/src/screen/common.ipp b/managed_components/espressif__brookesia_app_settings/src/screen/common.ipp
+index afa5e10..8beb5e2 100644
+--- a/managed_components/espressif__brookesia_app_settings/src/screen/common.ipp
++++ b/managed_components/espressif__brookesia_app_settings/src/screen/common.ipp
+@@ -17,7 +17,7 @@ std::expected<void, std::string> SettingsApp::refresh_header(system::core::AppCo
+         updates,
+         HEADER_TITLE_PATH,
+         "labelProps.text",
+-        localized_text(current_locale_, current_page_)
++        current_page_ == PAGE_BATTERY ? "Battery" : localized_text(current_locale_, current_page_)
+     );
+     return context.gui().set_binding_values(updates);
+ }
+diff --git a/managed_components/espressif__brookesia_app_settings/src/service/device.ipp b/managed_components/espressif__brookesia_app_settings/src/service/device.ipp
+index 4d350ae..3498759 100644
+--- a/managed_components/espressif__brookesia_app_settings/src/service/device.ipp
++++ b/managed_components/espressif__brookesia_app_settings/src/service/device.ipp
+@@ -102,6 +102,43 @@ std::expected<void, std::string> SettingsApp::refresh_device_state(system::core:
+         }
+     }
+ 
++    if (device_service_binding_.is_valid()) {
++        auto info_result = DeviceHelper::call_function_sync<boost::json::object>(
++                               DeviceHelper::FunctionId::GetPowerBatteryInfo,
++                               service::helper::Timeout(DEVICE_SERVICE_TIMEOUT_MS)
++                           );
++        DeviceHelper::PowerBatteryInfo info;
++        if (info_result && BROOKESIA_DESCRIBE_FROM_JSON(*info_result, info)) {
++            device_ui_state_.battery_supported = true;
++            device_ui_state_.battery_charger_control_supported =
++                info.has_ability(hal::power::BatteryIface::Ability::ChargerControl);
++            device_ui_state_.battery_charge_config_supported =
++                info.has_ability(hal::power::BatteryIface::Ability::ChargeConfig);
++        }
++        auto state_result = DeviceHelper::call_function_sync<boost::json::object>(
++                                DeviceHelper::FunctionId::GetPowerBatteryState,
++                                service::helper::Timeout(DEVICE_SERVICE_TIMEOUT_MS)
++                            );
++        if (state_result && BROOKESIA_DESCRIBE_FROM_JSON(*state_result, device_ui_state_.battery_state)) {
++            device_ui_state_.battery_supported = true;
++        }
++        // Probe the operation as well as inspecting the advertised abilities.
++        // This keeps the controls usable across component versions whose
++        // serialized Ability list may not yet know the newer charger values.
++        auto config_result = DeviceHelper::call_function_sync<boost::json::object>(
++                                 DeviceHelper::FunctionId::GetPowerBatteryChargeConfig,
++                                 service::helper::Timeout(DEVICE_SERVICE_TIMEOUT_MS)
++                             );
++        if (config_result &&
++                BROOKESIA_DESCRIBE_FROM_JSON(*config_result, device_ui_state_.battery_charge_config)) {
++            device_ui_state_.battery_supported = true;
++            device_ui_state_.battery_charge_config_supported = true;
++            device_ui_state_.battery_charger_control_supported = true;
++        } else if (!config_result) {
++            BROOKESIA_LOGW("Battery charge configuration is unavailable: %1%", config_result.error());
++        }
++    }
++
+     auto result = refresh_my_device_state(context);
+     if (!result) {
+         return result;
+@@ -114,6 +151,10 @@ std::expected<void, std::string> SettingsApp::refresh_device_state(system::core:
+     if (!result) {
+         return result;
+     }
++    result = refresh_battery_state(context);
++    if (!result) {
++        return result;
++    }
+     subscribe_device_events();
+     return {};
+ }
+@@ -357,15 +398,67 @@ std::expected<void, std::string> SettingsApp::refresh_sound_state(system::core::
+     return context.gui().set_binding_values(updates);
+ }
+ 
++std::expected<void, std::string> SettingsApp::refresh_battery_state(system::core::AppContext &context)
++{
++    const auto &state = device_ui_state_.battery_state;
++    const bool available = device_ui_state_.battery_supported && state.is_present;
++    std::vector<gui::BindingValueUpdate> updates;
++    add_binding_update(updates, BATTERY_CARD_PATH, "commonProps.hidden", available ? "false" : "true");
++    add_binding_update(updates, BATTERY_LEVEL_PATH, "labelProps.text",
++                       available && state.percentage ? make_percent_text(*state.percentage) : "--");
++    add_binding_update(updates, HOME_BATTERY_VALUE_PATH, "labelProps.text",
++                       available && state.percentage ? make_percent_text(*state.percentage) :
++                       make_localized_unavailable_text(current_locale_));
++    add_binding_update(updates, BATTERY_VOLTAGE_PATH, "labelProps.text",
++                       available && state.voltage_mv ? std::to_string(*state.voltage_mv) + " mV" : "--");
++    add_binding_update(updates, BATTERY_CURRENT_PATH, "labelProps.text",
++                       available && state.current_ma ? std::to_string(*state.current_ma) + " mA" : "--");
++    add_control_state_updates(updates, BATTERY_CARD_PATH + std::string("/charging"),
++                              BATTERY_CHARGING_PATH, device_ui_state_.battery_charger_control_supported);
++    add_control_state_updates(updates, BATTERY_RATE_PATH, BATTERY_RATE_PATH,
++                              device_ui_state_.battery_charge_config_supported);
++    add_binding_update(updates, BATTERY_CHARGING_PATH, "checked",
++                       device_ui_state_.battery_charge_config.enabled ? "true" : "false");
++    add_binding_update(updates, BATTERY_RATE_PATH, "labelProps.text",
++                       device_ui_state_.battery_charge_config_supported ?
++                       std::to_string(device_ui_state_.battery_charge_config.charge_current_ma) + " mA" : "--");
++    return context.gui().set_binding_values(updates);
++}
++
+ void SettingsApp::subscribe_device_events()
+ {
+     if (!SETTINGS_HARDWARE_OPERATIONS_ENABLED) {
+         return;
+     }
+ 
+-    if (!device_ui_state_.display_service_ready && !device_ui_state_.audio_service_ready) {
++    if (!device_ui_state_.display_service_ready && !device_ui_state_.audio_service_ready &&
++            !device_ui_state_.battery_supported) {
+         return;
+     }
++    if (device_ui_state_.battery_supported) {
++        auto state_connection = DeviceHelper::subscribe_event(
++                                    DeviceHelper::EventId::PowerBatteryStateChanged,
++                                    [this](const std::string &, const boost::json::object &data) {
++            if (context_ == nullptr || !BROOKESIA_DESCRIBE_FROM_JSON(data, device_ui_state_.battery_state)) {
++                return;
++            }
++            (void)refresh_battery_state(*context_);
++        });
++        if (state_connection.connected()) {
++            device_event_connections_.push_back(std::move(state_connection));
++        }
++        auto config_connection = DeviceHelper::subscribe_event(
++                                     DeviceHelper::EventId::PowerBatteryChargeConfigChanged,
++                                     [this](const std::string &, const boost::json::object &data) {
++            if (context_ == nullptr || !BROOKESIA_DESCRIBE_FROM_JSON(data, device_ui_state_.battery_charge_config)) {
++                return;
++            }
++            (void)refresh_battery_state(*context_);
++        });
++        if (config_connection.connected()) {
++            device_event_connections_.push_back(std::move(config_connection));
++        }
++    }
+ 
+     if (device_ui_state_.display_backlight_supported) {
+         const service::EventRegistry::SignalSlot brightness_callback =
+@@ -494,6 +587,45 @@ void SettingsApp::handle_mute_event(const gui::Event &event)
+     set_mute(*context_, *checked);
+ }
+ 
++void SettingsApp::handle_battery_charging_event(const gui::Event &event)
++{
++    if (context_ == nullptr || !device_ui_state_.battery_charger_control_supported) {
++        return;
++    }
++    auto checked = event.get_bool("checked");
++    if (!checked) {
++        return;
++    }
++    auto result = DeviceHelper::call_function_sync(
++                      DeviceHelper::FunctionId::SetPowerBatteryChargingEnabled, *checked,
++                      service::helper::Timeout(DEVICE_SERVICE_TIMEOUT_MS));
++    if (!result) {
++        BROOKESIA_LOGW("Failed to set battery charging state: %1%", result.error());
++    } else {
++        device_ui_state_.battery_charge_config.enabled = *checked;
++        (void)refresh_battery_state(*context_);
++    }
++}
++
++void SettingsApp::handle_battery_rate_event(const gui::Event &)
++{
++    if (context_ == nullptr || !device_ui_state_.battery_charge_config_supported) {
++        return;
++    }
++    auto config = device_ui_state_.battery_charge_config;
++    config.charge_current_ma = config.charge_current_ma >= 1000 ? 500 : 1000;
++    auto result = DeviceHelper::call_function_sync(
++                      DeviceHelper::FunctionId::SetPowerBatteryChargeConfig,
++                      BROOKESIA_DESCRIBE_TO_JSON(config).as_object(),
++                      service::helper::Timeout(DEVICE_SERVICE_TIMEOUT_MS));
++    if (!result) {
++        BROOKESIA_LOGW("Failed to set battery charge rate: %1%", result.error());
++    } else {
++        device_ui_state_.battery_charge_config = config;
++        (void)refresh_battery_state(*context_);
++    }
++}
++
+ void SettingsApp::set_brightness(system::core::AppContext &context, int brightness)
+ {
+     if (!SETTINGS_HARDWARE_OPERATIONS_ENABLED) {
+diff --git a/managed_components/espressif__brookesia_app_settings/src/settings_app.cpp b/managed_components/espressif__brookesia_app_settings/src/settings_app.cpp
+index 3229cd9..5ee0073 100644
+--- a/managed_components/espressif__brookesia_app_settings/src/settings_app.cpp
++++ b/managed_components/espressif__brookesia_app_settings/src/settings_app.cpp
+@@ -109,7 +109,7 @@ int64_t elapsed_ms_since(SteadyTimePoint started_at, SteadyTimePoint ended_at =
+ 
+ void log_start_profile(const char *stage, SteadyTimePoint stage_started_at, SteadyTimePoint total_started_at)
+ {
+-    const auto now = SteadyClock::now();
++    [[maybe_unused]] const auto now = SteadyClock::now();
+     APP_SETTINGS_PROFILE_LOGI(
+         "Settings start profile: stage(%1%), elapsed_ms(%2%), total_ms(%3%)",
+         stage,
+@@ -142,6 +142,7 @@ static constexpr const char *THEME_LIGHT = "light";
+ static constexpr const char *THEME_DARK = "dark";
+ static constexpr const char *PAGE_HOME = "settings_home";
+ static constexpr const char *PAGE_DEVICE = "my_device";
++static constexpr const char *PAGE_BATTERY = "battery";
+ static constexpr const char *PAGE_WIFI = "wifi";
+ static constexpr const char *PAGE_WIFI_CONNECT = "wifi_connect";
+ static constexpr const char *PAGE_SOUND = "sound";
+@@ -151,6 +152,8 @@ static constexpr const char *PAGE_LANGUAGE = "language";
+ static constexpr const char *PAGE_TIME_ZONE = "time_zone";
+ static constexpr const char *PAGE_DEBUG = "debug";
+ static constexpr const char *ACTION_OPEN_HOME = "settings.open.home";
++static constexpr const char *ACTION_OPEN_BATTERY = "settings.open.battery";
++static constexpr const char *ACTION_BACK_BATTERY = "settings.back.battery";
+ static constexpr const char *ACTION_HEADER_BACK = "settings.header.back";
+ static constexpr const char *ACTION_BACK_LANGUAGE = "settings.back.language";
+ static constexpr const char *ACTION_OPEN_DEBUG = "settings.open.debug";
+@@ -164,6 +167,8 @@ static constexpr const char *ACTION_WIFI_CONNECT_SUBMIT = "settings.wifi.connect
+ static constexpr const char *ACTION_DISPLAY_BRIGHTNESS = "settings.display.brightness";
+ static constexpr const char *ACTION_SOUND_VOLUME = "settings.sound.volume";
+ static constexpr const char *ACTION_SOUND_MUTE = "settings.sound.mute";
++static constexpr const char *ACTION_BATTERY_CHARGING = "settings.battery.charging";
++static constexpr const char *ACTION_BATTERY_RATE = "settings.battery.rate";
+ static constexpr const char *ACTION_DEBUG_MEMORY_TOGGLE = "settings.debug.memory.toggle";
+ static constexpr const char *ACTION_DEBUG_THREAD_TOGGLE = "settings.debug.thread.toggle";
+ static constexpr const char *ACTION_DEBUG_GUI_TOGGLE = "settings.debug.gui.toggle";
+@@ -299,9 +304,10 @@ static constexpr const char *DEBUG_KEY_THREAD_STACK_HIGH_WATER_MARK_THRESHOLD_BY
+     "Debug.ThreadStackHighWaterMarkThresholdBytes";
+ static constexpr uint32_t SETTINGS_STORAGE_TIMEOUT_MS = WIFI_SERVICE_TIMEOUT_MS;
+ 
+-static constexpr std::array<const char *, 18> NAVIGATION_ACTIONS = {
++static constexpr std::array<const char *, 20> NAVIGATION_ACTIONS = {
+     ACTION_OPEN_HOME,
+     "settings.back.device",
++    ACTION_BACK_BATTERY,
+     "settings.back.wifi",
+     ACTION_BACK_WIFI_CONNECT,
+     "settings.back.sound",
+@@ -310,6 +316,7 @@ static constexpr std::array<const char *, 18> NAVIGATION_ACTIONS = {
+     "settings.back.time_zone",
+     ACTION_BACK_DEBUG,
+     "settings.open.device",
++    ACTION_OPEN_BATTERY,
+     "settings.open.wifi",
+     ACTION_OPEN_WIFI_CONNECT,
+     "settings.open.sound",
+@@ -357,15 +364,21 @@ std::vector<std::string> make_default_action_subscriptions()
+         WIFI_AVAILABLE_NEXT_ACTION,
+         ACTION_HEADER_BACK,
+     };
++    static constexpr std::array<const char *, 2> BATTERY_ACTIONS = {
++        ACTION_BATTERY_CHARGING,
++        ACTION_BATTERY_RATE,
++    };
+ 
+     std::vector<std::string> actions;
+     actions.reserve(
+-        NAVIGATION_ACTIONS.size() + THEME_ACTIONS.size() + TIME_ZONE_ACTIONS.size() + WIFI_ACTIONS.size()
++        NAVIGATION_ACTIONS.size() + THEME_ACTIONS.size() + TIME_ZONE_ACTIONS.size() + WIFI_ACTIONS.size() +
++        BATTERY_ACTIONS.size()
+     );
+     append_action_subscriptions(actions, NAVIGATION_ACTIONS);
+     append_action_subscriptions(actions, THEME_ACTIONS);
+     append_action_subscriptions(actions, TIME_ZONE_ACTIONS);
+     append_action_subscriptions(actions, WIFI_ACTIONS);
++    append_action_subscriptions(actions, BATTERY_ACTIONS);
+     return actions;
+ }
+ 
+@@ -463,9 +476,10 @@ std::string make_app_version()
+            std::to_string(BROOKESIA_APP_SETTINGS_VER_PATCH);
+ }
+ 
+-static constexpr std::array<NavigationTarget, 18> NAVIGATION_TARGETS = {
++static constexpr std::array<NavigationTarget, 20> NAVIGATION_TARGETS = {
+     NavigationTarget{ACTION_OPEN_HOME, PAGE_HOME},
+     NavigationTarget{"settings.back.device", PAGE_HOME},
++    NavigationTarget{ACTION_BACK_BATTERY, PAGE_HOME},
+     NavigationTarget{"settings.back.wifi", PAGE_HOME},
+     NavigationTarget{ACTION_BACK_WIFI_CONNECT, PAGE_WIFI},
+     NavigationTarget{"settings.back.sound", PAGE_HOME},
+@@ -474,6 +488,7 @@ static constexpr std::array<NavigationTarget, 18> NAVIGATION_TARGETS = {
+     NavigationTarget{"settings.back.time_zone", PAGE_MORE},
+     NavigationTarget{ACTION_BACK_DEBUG, PAGE_DEVICE},
+     NavigationTarget{"settings.open.device", PAGE_DEVICE},
++    NavigationTarget{ACTION_OPEN_BATTERY, PAGE_BATTERY},
+     NavigationTarget{"settings.open.wifi", PAGE_WIFI},
+     NavigationTarget{ACTION_OPEN_WIFI_CONNECT, PAGE_WIFI_CONNECT},
+     NavigationTarget{"settings.open.sound", PAGE_SOUND},
+@@ -689,6 +704,9 @@ std::string_view get_header_back_action_for_page(std::string_view page)
+     if (page == PAGE_DEVICE) {
+         return "settings.back.device";
+     }
++    if (page == PAGE_BATTERY) {
++        return ACTION_BACK_BATTERY;
++    }
+     if (page == PAGE_WIFI) {
+         return "settings.back.wifi";
+     }
+

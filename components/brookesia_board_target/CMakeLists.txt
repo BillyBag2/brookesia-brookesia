@@ -39,4 +39,11 @@ idf_component_register(
         espressif__esp_io_expander
 )
 
+# Keep board device plugin registration sections alive when the ESP-IDF linker
+# garbage-collects otherwise unreferenced static constructors.
+if(BROOKESIA_BOARD_TARGET STREQUAL "m5stack_tab5")
+    target_link_libraries(${COMPONENT_LIB} INTERFACE
+        "-u brookesia_m5stack_tab5_power_device_plugin")
+endif()
+
 message(STATUS "Brookesia native board target: ${BROOKESIA_BOARD_TARGET}")
