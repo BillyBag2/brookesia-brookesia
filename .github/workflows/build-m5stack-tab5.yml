@@ -29,14 +29,18 @@ jobs:
         with:
           version: v6.1
 
-      - name: Generate M5Stack TAB5 Board Manager configuration
+      - name: Bootstrap managed components and Board Manager configuration
         shell: pwsh
         run: |
-          # A fresh checkout has no generated Board Manager component. The
-          # initial configure downloads its generator, but may fail while
-          # component requirements are evaluated without the generated files.
+          ./fetch-components.ps1
+
+          # A clean checkout has no managed components. This first configure
+          # downloads them and is allowed to fail because esp_video 2.4.1 is
+          # missing a Kconfig symbol referenced by registry metadata.
+          $PSNativeCommandUseErrorActionPreference = $false
           idf.py reconfigure
           $configureExitCode = $LASTEXITCODE
+          Write-Host "Initial bootstrap configure exited with code $configureExitCode."
 
           $generator = "managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py"
           if (-not (Test-Path -LiteralPath $generator -PathType Leaf)) {
@@ -47,6 +51,17 @@ jobs:
           python $generator -b m5stack_tab5
           if ($LASTEXITCODE -ne 0) {
             throw "Board Manager configuration generation failed with exit code $LASTEXITCODE."
+          }
+
+          ./patch-managed-components.ps1
+          if ($LASTEXITCODE -ne 0) {
+            throw "Managed-component patching failed with exit code $LASTEXITCODE."
+          }
+
+          # This is the authoritative configure and must succeed.
+          idf.py reconfigure
+          if ($LASTEXITCODE -ne 0) {
+            throw "ESP-IDF configuration failed with exit code $LASTEXITCODE after patching managed components."
           }
 
       - name: Build and package M5Stack TAB5 firmware

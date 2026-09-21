@@ -72,6 +72,31 @@ if (-not $PackageOnly) {
 
     Push-Location $ProjectRoot
     try {
+        & (Join-Path $ProjectRoot "fetch-components.ps1")
+
+        $videoKconfig = Join-Path $ProjectRoot "managed_components/espressif__esp_video/Kconfig"
+        if (-not (Test-Path -LiteralPath $videoKconfig -PathType Leaf)) {
+            Write-Host "Bootstrapping managed components; the initial configure is allowed to fail."
+            $hasNativePreference = Test-Path variable:PSNativeCommandUseErrorActionPreference
+            if ($hasNativePreference) {
+                $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+                $PSNativeCommandUseErrorActionPreference = $false
+            }
+            try {
+                & idf.py -B $BuildRoot reconfigure
+                $bootstrapExitCode = $LASTEXITCODE
+            }
+            finally {
+                if ($hasNativePreference) {
+                    $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+                }
+            }
+            if (-not (Test-Path -LiteralPath $videoKconfig -PathType Leaf)) {
+                throw "Initial ESP-IDF configure exited with code $bootstrapExitCode and did not download esp_video."
+            }
+        }
+
+        & (Join-Path $ProjectRoot "patch-managed-components.ps1")
         & idf.py -B $BuildRoot build
         if ($LASTEXITCODE -ne 0) {
             throw "ESP-IDF build failed with exit code $LASTEXITCODE."

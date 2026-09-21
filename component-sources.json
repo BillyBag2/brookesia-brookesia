@@ -1,0 +1,10 @@
+{
+  "espBrookesia": {
+    "repository": "https://github.com/BillyBag2/esp-brookesia.git",
+    "commit": "863b3ff138b06b1bdf42852b91a5ed081311a8f8",
+    "paths": [
+      "hal/brookesia_hal_interface",
+      "utils/brookesia_lib_utils"
+    ]
+  }
+}

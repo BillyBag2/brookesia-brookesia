@@ -6,13 +6,56 @@ An attempt to create ESP-Brookesia, for a number of boards that I have.
 
 ## Building the project for the first time
 
-If the project fails to configure for the first time in an IDF terminal use...
+On a fresh checkout, fetch the two unreleased ESP-Brookesia components, then
+let ESP-IDF download `managed_components`. The initial configure may finish
+with a Kconfig error; that is expected during the bootstrap pass:
+
+```powershell
+.\fetch-components.ps1
+idf.py reconfigure
+```
+
+Once `managed_components` exists, generate the board files, apply the managed
+component compatibility patch, and configure again:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
-python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+python .\managed_components\espressif__esp_board_manager\gen_bmgr_config_codes.py -b m5stack_tab5
+.\patch-managed-components.ps1
 idf.py reconfigure
+idf.py build
 ```
+
+The patch step supplies a compatibility Kconfig symbol that current registry
+metadata references but `espressif/esp_video` 2.4.1 does not declare. It also
+adds a short startup delay and retry loop to the Board Manager I2C touch probe;
+the TAB5 touch controller may not acknowledge immediately after its power rail
+is enabled. Both patches are idempotent and are also run automatically by
+`build-firmware.ps1`. CMake reapplies them after ESP-IDF resolves managed
+components, since `idf.py reconfigure` can replace patched managed sources.
+
+The same patch step applies the battery-specific Settings and SuperOS code from
+forked ESP-Brookesia commit `863b3ff138b06b1bdf42852b91a5ed081311a8f8`.
+The checked-in patches are
+`patches/brookesia/settings-battery.patch` and
+`patches/brookesia/superos-battery.patch`. They target the published 0.8.3
+components and deliberately exclude the fork's newer expansion-service code,
+which requires a different Device/Helper pairing. CMake reapplies these
+patches after managed-component refreshes; if a future registry version no
+longer matches, configuration fails rather than silently dropping battery UI.
+
+The native manifest pins `brookesia_service_helper` 0.8.4 and
+`brookesia_service_usb` 0.8.0 alongside `brookesia_service_device` 0.8.2.
+Helper 0.8.5 exposes an additional expansion-module function that the latest
+published Device service does not yet implement; mixing those releases causes
+Device service registration to fail during startup.
+
+`fetch-components.ps1` creates a filtered sparse checkout under
+`.deps/esp-brookesia`. It fetches only `brookesia_hal_interface` and
+`brookesia_lib_utils` from the fork and verifies the exact commit recorded in
+`component-sources.json`. The directory is generated and ignored by Git. To
+adopt a newer fork revision, update the 40-character commit in that manifest,
+run the fetch script, test a clean build, and commit the manifest change.
 
 ## Build and package firmware
 
@@ -22,8 +65,9 @@ Run the packaging script from an initialized ESP-IDF PowerShell terminal:
 .\build-firmware.ps1
 ```
 
-It performs a normal incremental `idf.py build`, then copies every binary listed
-by ESP-IDF's `flasher_args.json` into `output/m5stack_tab5`. The package also
+It fetches the pinned unreleased components, bootstraps managed components when
+needed, performs a normal incremental `idf.py build`, then copies every binary
+listed by ESP-IDF's `flasher_args.json` into `output/m5stack_tab5`. The package also
 contains a padded 16 MB `firmware-complete.bin` suitable for a single-file burner
 at offset `0x0`, its flash metadata, `sdkconfig`, dependency lock file,
 ready-to-edit flash commands, and a generated `README.md` recording the Git commit
@@ -73,6 +117,7 @@ For TAB5, run an initial `idf.py reconfigure` to download the managed
 components, then generate its display and audio board configuration with:
 
 ```powershell
+.\fetch-components.ps1
 idf.py bmgr -b m5stack_tab5
 ```
 
@@ -83,7 +128,10 @@ generator directly from the repository root in the ESP-IDF terminal:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
-python managed_components/espressif__esp_board_manager/gen_bmgr_config_codes.py -b m5stack_tab5
+.\fetch-components.ps1
+python .\managed_components\espressif__esp_board_manager\gen_bmgr_config_codes.py -b m5stack_tab5
+.\patch-managed-components.ps1
+idf.py reconfigure
 idf.py build
 ```
 
@@ -91,8 +139,8 @@ This restores `components/gen_bmgr_codes`, including the codec capabilities
 needed to resolve the audio Kconfig conditions. Keep the audio processor
 disabled in `sdkconfig.m5_stack_tab5`; enabling it is not a fix for this warning.
 
-Run `idf.py reconfigure` again after generation. The root `CMakeLists.txt`
-remains the source of truth for the selected project target.
+The root `CMakeLists.txt` remains the source of truth for the selected project
+target.
 
 The shared P4 file selects silicon revisions **1.0-1.99** in ESP-IDF 6.1.
 Revision 3.x requires a separate configuration. All board files enable 200 MHz
@@ -241,7 +289,8 @@ Versions below were checked against the [ESP Component Registry](https://compone
 - [x] Microphone input from ES7210 codec through the shared `AudioEncoder0` service.
 - [x] Shared audio volume and mute control through the `AudioPlayback` service.
 - [ ] Camera input from SC2356.
-- [ ] Battery status and charging.
+- [x] Battery voltage, signed charge/discharge current, and fixed-curve percentage.
+- [x] Charging on/off and 0.5 A / 1 A charge-rate selection.
 - [ ] Motion sensor BMI270. (orientation, shake detection, others?)
 - [ ] Video playback.
 - [ ] M5 Stack Keyboard support.

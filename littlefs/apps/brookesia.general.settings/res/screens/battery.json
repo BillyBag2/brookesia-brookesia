@@ -1,0 +1,77 @@
+{
+    "type": "viewScreen",
+    "id": "battery",
+    "mountMode": "dynamic",
+    "commonProps": { "scrollable": false },
+    "styleRefs": ["app.page"],
+    "children": [
+        {
+            "type": "container",
+            "id": "page",
+            "commonProps": { "scrollable": true },
+            "layout": { "type": "flex", "flexFlow": "column", "gap": "${constant.settings.layout.pageGap}" },
+            "placement": {
+                "mode": "absolute",
+                "x": "${constant.settings.layout.pageX}",
+                "y": "${constant.settings.layout.pageY}",
+                "width": "${constant.settings.layout.pageWidth}",
+                "height": "${constant.settings.layout.pageHeight}"
+            },
+            "children": [
+                {
+                    "type": "templateRef",
+                    "id": "battery_card",
+                    "templateId": "settings_card",
+                    "overrides": { ".": { "layout": { "gap": "0dp" } } },
+                    "slots": {
+                        "content": [
+                            {
+                                "type": "templateRef", "id": "level", "templateId": "menu_item",
+                                "overrides": {
+                                    ".": { "commonProps": { "clickable": false }, "events": [] },
+                                    "title_box/title": { "labelProps": { "text": "Battery level" } },
+                                    "value_box/value": { "labelProps": { "text": "--" } }
+                                }
+                            },
+                            {
+                                "type": "templateRef", "id": "voltage", "templateId": "menu_item",
+                                "overrides": {
+                                    ".": { "commonProps": { "clickable": false }, "events": [] },
+                                    "title_box/title": { "labelProps": { "text": "Voltage" } },
+                                    "value_box/value": { "labelProps": { "text": "--" } }
+                                }
+                            },
+                            {
+                                "type": "templateRef", "id": "current", "templateId": "menu_item",
+                                "overrides": {
+                                    ".": { "commonProps": { "clickable": false }, "events": [] },
+                                    "title_box/title": { "labelProps": { "text": "Current" } },
+                                    "value_box/value": { "labelProps": { "text": "--" } }
+                                }
+                            },
+                            {
+                                "type": "templateRef", "id": "charging", "templateId": "switch_row",
+                                "overrides": {
+                                    "text/title": { "labelProps": { "text": "Charging enabled" } },
+                                    "text/subtitle": { "commonProps": { "hidden": true } },
+                                    "toggle": {
+                                        "events": [{ "type": "valueChanged", "action": "settings.battery.charging" }],
+                                        "toggleProps": { "checked": false }
+                                    }
+                                }
+                            },
+                            {
+                                "type": "templateRef", "id": "rate", "templateId": "menu_item",
+                                "overrides": {
+                                    ".": { "events": [{ "type": "clicked", "action": "settings.battery.rate" }] },
+                                    "title_box/title": { "labelProps": { "text": "Charge rate" } },
+                                    "value_box/value": { "labelProps": { "text": "--" } }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

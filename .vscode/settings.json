@@ -40,7 +40,7 @@
     "--compile-commands-dir=c:\\repos\\brookesia-brookesia\\build"
   ],
   "idf.flashType": "UART",
-  "idf.portWin": "COM3",
+  "idf.portWin": "COM13",
   "peacock.color": "#2b165a",
   "workbench.colorCustomizations": {
     "activityBar.activeBackground": "#3f2083",

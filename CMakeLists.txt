@@ -19,7 +19,24 @@ list(APPEND SDKCONFIG_DEFAULTS
 )
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(sample_project)
+project(Brookesia-Brookesia)
+
+# ESP-IDF can refresh managed component sources while configuring. Reapply our
+# compatibility patches after dependency resolution, before compiling them.
+if(CMAKE_HOST_WIN32)
+    find_program(BROOKESIA_POWERSHELL_EXECUTABLE NAMES pwsh powershell REQUIRED)
+else()
+    find_program(BROOKESIA_POWERSHELL_EXECUTABLE NAMES pwsh REQUIRED)
+endif()
+execute_process(
+    COMMAND "${BROOKESIA_POWERSHELL_EXECUTABLE}"
+        -NoProfile -File "${CMAKE_CURRENT_LIST_DIR}/patch-managed-components.ps1"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+    RESULT_VARIABLE BROOKESIA_PATCH_RESULT
+)
+if(NOT BROOKESIA_PATCH_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to patch managed components: ${BROOKESIA_PATCH_RESULT}")
+endif()
 
 # Package Brookesia's staged UI resources into the runtime filesystem and
 # include that image in the normal `idf.py flash` command.
